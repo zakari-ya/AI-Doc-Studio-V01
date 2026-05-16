@@ -1,0 +1,16 @@
+{
+  "name": "AI Document Reconstruction Studio",
+  "short_name": "DocStudio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030303",
+  "theme_color": "#030303",
+  "description": "Advanced multi-modal engine for structural document recovery and semantic markdown transformation.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/338/338043.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

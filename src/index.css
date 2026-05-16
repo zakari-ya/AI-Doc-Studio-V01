@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-destructive: #ef4444;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-[#030303] text-zinc-300 antialiased;
+  }
+}
+
+@layer components {
+  .dashed-grid {
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+  
+  .glass {
+    @apply bg-white/[0.02] backdrop-blur-3xl border border-white/5;
+  }
+
+  .panel-header {
+    @apply h-12 border-b border-white/5 bg-zinc-950/50 flex items-center px-6;
+  }
+
+  .utility-button {
+    @apply px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md;
+  }
+
+  .utility-button-active {
+    @apply bg-white text-black;
+  }
+
+  .utility-button-inactive {
+    @apply text-zinc-500 hover:text-zinc-300 hover:bg-white/5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+
+  /* Notion-like Prose Overrides */
+  .prose {
+    --tw-prose-body: #37352f;
+    --tw-prose-headings: #37352f;
+    --tw-prose-lead: #37352f;
+    --tw-prose-links: #2383e2;
+    --tw-prose-bold: #37352f;
+    --tw-prose-counters: #37352f;
+    --tw-prose-bullets: #37352f;
+    --tw-prose-hr: #e1e1e1;
+    --tw-prose-quotes: #37352f;
+    --tw-prose-quote-borders: #37352f;
+    --tw-prose-captions: #37352f;
+    --tw-prose-code: #eb5757;
+    --tw-prose-pre-code: #37352f;
+    --tw-prose-pre-bg: #f7f6f3;
+    --tw-prose-th-borders: #e1e1e1;
+    --tw-prose-td-borders: #e1e1e1;
+  }
+
+  .prose h1 {
+    @apply text-4xl mb-8 mt-12 font-bold tracking-tight;
+  }
+
+  .prose h2 {
+    @apply text-2xl mb-4 mt-8 font-semibold border-b border-zinc-100 pb-2;
+  }
+
+  .prose h3 {
+    @apply text-xl mb-3 mt-6 font-semibold;
+  }
+
+  .prose p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .prose ul {
+    @apply list-disc pl-6 mb-4 space-y-1;
+  }
+
+  .prose ol {
+    @apply list-decimal pl-6 mb-4 space-y-1;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-zinc-200 pl-4 italic text-zinc-600 my-6;
+  }
+
+  /* Table Specific Styling */
+  .prose table {
+    @apply border-collapse table-auto w-full border border-zinc-200 my-6;
+  }
+
+  .prose th, .prose td {
+    @apply border border-zinc-200 p-3 text-left align-top min-w-[100px];
+  }
+
+  .prose th {
+    @apply bg-zinc-50/50 font-bold text-zinc-900;
+  }
+
+  .prose tr:nth-child(even) {
+    @apply bg-zinc-50/30;
+  }
+}
