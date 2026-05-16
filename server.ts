@@ -1,8 +1,8 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 import dotenv from "dotenv";
 import { AIReconstructionSchema, AIOutputSchema } from "./src/lib/schemas.js";
 import { secureMarkdown } from "./src/lib/sanitizer.js";
@@ -40,24 +40,23 @@ const exportLimiter = new RateLimiterMemory({
 });
 
 // Middleware to apply rate limiting
-const createRateLimitMiddleware = (limiter: RateLimiterMemory) => async (req: any, res: any, next: NextFunction) => {
+const createRateLimitMiddleware = (limiter: RateLimiterMemory) => async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     await limiter.consume(req.ip || "anonymous");
     next();
   } catch (rejRes) {
-    const error = rejRes as RateLimiterRes;
     res.status(429).json({
       error: "Rate Limit Exceeded",
       message: "Too many requests. Please slow down and try again later.",
-      retryAfter: Math.round(error.msBeforeNext / 1000) || 1
+      retryAfter: Math.round(rejRes.msBeforeNext / 1000) || 1
     });
   }
 };
 
-app.use(express.json({ limit: "50mb" }) as express.RequestHandler);
+app.use(express.json({ limit: "50mb" }));
 
 // AI RECONSTRUCTION ENDPOINT
-app.post("/api/reconstruct", createRateLimitMiddleware(aiLimiter), async (req: any, res: any) => {
+app.post("/api/reconstruct", createRateLimitMiddleware(aiLimiter), async (req, res) => {
   try {
     const { rawText } = req.body;
 
@@ -131,19 +130,19 @@ app.post("/api/reconstruct", createRateLimitMiddleware(aiLimiter), async (req: a
 });
 
 // OCR ENDPOINT (Placeholder/Proxy for future server-side OCR)
-app.post("/api/ocr", createRateLimitMiddleware(ocrLimiter), async (req: any, res: any) => {
+app.post("/api/ocr", createRateLimitMiddleware(ocrLimiter), async (req, res) => {
   // Currently extraction is client-side, this provides the endpoint structure requested
   res.json({ status: "OCR gateway active", notice: "Proceed with secure client-side extraction or upgrade to dedicated server-side tesseract endpoint." });
 });
 
 // UPLOAD ENDPOINT
-app.post("/api/upload/verify", createRateLimitMiddleware(uploadLimiter), async (req: any, res: any) => {
+app.post("/api/upload/verify", createRateLimitMiddleware(uploadLimiter), async (req, res) => {
   // Validates file metadata before full processing
   res.json({ status: "verified", integrity: "high" });
 });
 
 // EXPORT ENDPOINT (DOCX Export)
-app.post("/api/export/docx", createRateLimitMiddleware(exportLimiter), async (req: any, res: any) => {
+app.post("/api/export/docx", createRateLimitMiddleware(exportLimiter), async (req, res) => {
   // Logic could be moved here for full server-side generation
   res.json({ status: "Export authorized", message: "Download stream initiated" });
 });
@@ -155,11 +154,11 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares as express.RequestHandler);
+    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath) as express.RequestHandler);
-    app.get("*", (req: any, res: any) => {
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
