@@ -10,12 +10,12 @@ export function LandingPage({ onStart }: LandingPageProps) {
   return (
     <div className="w-full flex flex-col bg-[#030303] text-zinc-300 font-sans selection:bg-white/10 overflow-x-hidden">
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
+      <header className="fixed top-0 left-0 right-0 h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
-            <div className="w-3 h-3 bg-black rounded-sm"></div>
+          <div className="w-5 h-5 md:w-6 md:h-6 bg-white rounded-md flex items-center justify-center">
+            <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-black rounded-sm"></div>
           </div>
-          <span className="font-bold text-white tracking-tighter uppercase text-sm">RECON STUDIO</span>
+          <span className="font-bold text-white tracking-tighter uppercase text-[10px] md:text-sm">RECON STUDIO</span>
         </div>
         <nav className="hidden md:flex items-center gap-12 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
           <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
@@ -24,7 +24,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
         </nav>
         <button
           onClick={onStart}
-          className="text-[10px] font-bold text-black bg-white px-5 py-2 rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest active:scale-95"
+          className="text-[9px] md:text-[10px] font-bold text-black bg-white px-4 md:px-5 py-2 rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest active:scale-95"
         >
           Initialize
         </button>
@@ -51,7 +51,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-6xl md:text-8xl font-light tracking-tighter text-white leading-[0.9]"
+              className="text-5xl sm:text-6xl md:text-8xl font-light tracking-tighter text-white leading-[0.9]"
             >
               Document recovery <br />
               <span className="italic font-serif text-zinc-500">at any complexity.</span>
@@ -61,7 +61,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 1 }}
-              className="text-lg md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light"
+              className="text-base md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light px-4"
             >
               Advanced multi-modal engine for structural document recovery. Transform legacy PDFs into perfectly semantic Markdown with surgical fidelity.
             </motion.p>
@@ -71,16 +71,16 @@ export function LandingPage({ onStart }: LandingPageProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-wrap justify-center gap-6"
+            className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 px-4"
           >
             <button
               onClick={onStart}
-              className="px-10 py-5 bg-white text-black rounded-full font-bold text-xs hover:bg-zinc-200 transition-all flex items-center gap-3 group uppercase tracking-widest"
+              className="w-full sm:w-auto px-10 py-5 bg-white text-black rounded-full font-bold text-xs hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group uppercase tracking-widest"
             >
               Launch Studio
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="px-10 py-5 bg-white/5 border border-white/10 rounded-full font-bold text-xs hover:bg-white/10 transition-all text-white flex items-center gap-3 uppercase tracking-widest">
+            <button className="w-full sm:w-auto px-10 py-5 bg-white/5 border border-white/10 rounded-full font-bold text-xs hover:bg-white/10 transition-all text-white flex items-center justify-center gap-3 uppercase tracking-widest">
               Protocol Specs
               <Terminal className="w-4 h-4 opacity-50" />
             </button>
@@ -99,12 +99,18 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </section>
 
       {/* Mockup Preview Section */}
-      <section className="px-4 py-40 bg-[#030303]">
+      <section className="px-4 py-20 md:py-40 bg-[#030303]">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-end justify-between mb-12">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-8 md:mb-12 gap-6">
             <div className="space-y-4">
                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Laboratory Preview</span>
-               <h2 className="text-4xl font-light text-white tracking-tight">Unified Reconstruction View</h2>
+               <h2 className="text-3xl md:text-4xl font-light text-white tracking-tight">Unified Reconstruction View</h2>
+            </div>
+            <div className="flex md:hidden items-center gap-4 text-[9px] font-mono text-zinc-600">
+               <div className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
+                 99.8% FIDELITY
+               </div>
             </div>
             <div className="hidden md:flex items-center gap-4 text-[10px] font-mono text-zinc-600">
                <div className="flex items-center gap-2">
@@ -132,8 +138,8 @@ export function LandingPage({ onStart }: LandingPageProps) {
                  <span>output.md</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 h-[600px]">
-               <div className="border-r border-white/5 p-10 font-mono text-[11px] space-y-6 opacity-30 select-none">
+            <div className="grid grid-cols-1 md:grid-cols-2 h-auto md:h-[600px]">
+               <div className="hidden md:block border-r border-white/5 p-10 font-mono text-[11px] space-y-6 opacity-30 select-none">
                   <div className="space-y-2">
                     <div className="h-2 w-1/3 bg-white/20 rounded-full" />
                     <div className="h-2 w-2/3 bg-white/10 rounded-full" />
@@ -199,16 +205,16 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </section>
 
       {/* Capabilities Section */}
-      <section id="features" className="py-40 px-4 bg-white text-black rounded-[40px] md:rounded-[80px]">
+      <section id="features" className="py-20 md:py-40 px-4 bg-white text-black rounded-[30px] md:rounded-[80px]">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-20 items-start">
-             <div className="md:w-1/2 space-y-12 h-min sticky top-40">
+          <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-start">
+             <div className="md:w-1/2 space-y-8 md:space-y-12 h-min md:sticky md:top-40">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.5em]">System Capabilities</span>
-                <h2 className="text-6xl md:text-8xl font-light tracking-tighter leading-[0.8]">Built for <br /> <span className="italic font-serif">precision.</span></h2>
-                <p className="text-lg text-zinc-500 max-w-sm leading-relaxed">Most AI engines treat text as a flat stream. We treat documents as multi-layered structural architectures.</p>
+                <h2 className="text-4xl md:text-8xl font-light tracking-tighter leading-[0.8]">Built for <br /> <span className="italic font-serif">precision.</span></h2>
+                <p className="text-base md:text-lg text-zinc-500 max-w-sm leading-relaxed">Most AI engines treat text as a flat stream. We treat documents as multi-layered structural architectures.</p>
              </div>
              
-             <div className="md:w-1/2 space-y-24">
+             <div className="md:w-1/2 space-y-12 md:space-y-24">
                 {[
                   { 
                     title: "Spatial Intelligence", 

@@ -60,28 +60,28 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.02 }}
-            className="flex flex-col items-center justify-center min-h-screen p-8"
+            className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8"
           >
             <div className="w-full max-w-4xl">
-               <header className="text-center space-y-6 mb-20">
+               <header className="text-center space-y-4 md:space-y-6 mb-12 md:mb-20">
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                     className="flex flex-col items-center gap-4"
                   >
-                    <div className="h-px w-12 bg-white/20" />
-                    <h2 className="text-4xl font-light tracking-tighter text-white italic font-serif">Laboratory / 01</h2>
+                    <div className="h-px w-8 md:w-12 bg-white/20" />
+                    <h2 className="text-3xl md:text-4xl font-light tracking-tighter text-white italic font-serif">Laboratory / 01</h2>
                   </motion.div>
-                  <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.4em]">Select document for structural reconstruction</p>
+                  <p className="text-zinc-500 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] px-4">Select document for structural reconstruction</p>
                </header>
                <UploadSection onUpload={handleProcess} />
-               <div className="flex justify-center mt-20">
+               <div className="flex justify-center mt-12 md:mt-20">
                  <button 
                    onClick={() => setState("LANDING")}
-                   className="text-[10px] font-bold text-zinc-700 hover:text-white uppercase tracking-[0.4em] transition-all flex items-center gap-4 group"
+                   className="text-[9px] md:text-[10px] font-bold text-zinc-700 hover:text-white uppercase tracking-[0.3em] md:tracking-[0.4em] transition-all flex items-center gap-3 md:gap-4 group"
                  >
-                   <div className="w-8 h-px bg-zinc-800 group-hover:w-12 group-hover:bg-white transition-all" />
+                   <div className="w-6 md:w-8 h-px bg-zinc-800 group-hover:w-10 md:group-hover:w-12 group-hover:bg-white transition-all" />
                    Back to Overview
                  </button>
                </div>

@@ -355,13 +355,13 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
   return (
     <div className="flex flex-col h-screen bg-[#030303] text-zinc-300 font-sans overflow-hidden select-none">
       {/* Header Navigation */}
-      <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#030303] backdrop-blur-xl z-50">
-        <div className="flex items-center gap-6">
+      <header className="h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] backdrop-blur-xl z-50">
+        <div className="flex items-center gap-4 md:gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
-              <div className="w-3 h-3 bg-black rounded-sm"></div>
+            <div className="w-5 h-5 md:w-6 md:h-6 bg-white rounded-md flex items-center justify-center">
+              <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-black rounded-sm"></div>
             </div>
-            <span className="font-bold text-white tracking-tighter uppercase text-xs">RECON STUDIO</span>
+            <span className="font-bold text-white tracking-tighter uppercase text-[10px] md:text-xs">RECON</span>
           </div>
           <div className="h-4 w-px bg-white/10 hidden md:block"></div>
           <nav className="hidden md:flex items-center gap-6 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
@@ -371,22 +371,22 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden lg:flex items-center gap-1.5 px-4 py-2 border border-white/5 rounded-full bg-white/[0.02] text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 border border-white/5 rounded-full bg-white/[0.02] text-[9px] font-bold uppercase tracking-widest text-zinc-500">
             <div className={cn("w-1.5 h-1.5 rounded-full", copied ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-blue-500/40")}></div>
             {copied ? "Buffer Copied" : "Fidelity: High"}
           </div>
 
           <div className="relative group">
-            <button className="flex items-center gap-3 bg-white text-black px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95">
+            <button className="flex items-center gap-2 md:gap-3 bg-white text-black px-4 md:px-6 py-2 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95">
               <span>Export</span>
               <Download className="w-3 h-3" />
             </button>
-            <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all z-50 shadow-2xl">
+            <div className="absolute right-0 top-full mt-2 w-48 md:w-56 bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all z-50 shadow-2xl">
               <div className="p-2 space-y-1">
-                <button onClick={exportAsMd} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Markdown (.md)</button>
-                <button onClick={exportAsTxt} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Plain Text (.txt)</button>
-                <button onClick={exportAsDocx} disabled={isExporting} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all flex justify-between items-center">
+                <button onClick={exportAsMd} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Markdown (.md)</button>
+                <button onClick={exportAsTxt} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Plain Text (.txt)</button>
+                <button onClick={exportAsDocx} disabled={isExporting} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all flex justify-between items-center">
                   <span>Word (.docx)</span>
                   {isExporting && <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                 </button>
@@ -396,9 +396,9 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
           
           <button 
             onClick={onBack}
-            className="p-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 md:p-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-colors"
           >
-            <X className="w-4 h-4 text-zinc-500" />
+            <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-zinc-500" />
           </button>
         </div>
       </header>
@@ -406,12 +406,12 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
       {/* Main Workspace */}
       <main className="flex-1 flex flex-col overflow-hidden bg-[#030303] relative">
         {/* Tab Bar */}
-        <div className="h-12 border-b border-white/5 flex items-center justify-between px-8 bg-zinc-950/30 backdrop-blur-md">
-          <div className="flex gap-8">
+        <div className="h-12 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-zinc-950/30 backdrop-blur-md overflow-x-auto no-scrollbar">
+          <div className="flex gap-4 md:gap-8 shrink-0">
             <button 
               onClick={() => handleTabChange("markdown")}
               className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1",
+                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 whitespace-nowrap",
                 activeTab === "markdown" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
               )}
             >
@@ -421,7 +421,7 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
             <button 
               onClick={() => handleTabChange("original")}
               className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1",
+                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 whitespace-nowrap",
                 activeTab === "original" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
               )}
             >
@@ -431,7 +431,7 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
             <button 
               onClick={() => handleTabChange("preview")}
               className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 flex items-center gap-2",
+                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 flex items-center gap-2 whitespace-nowrap",
                 activeTab === "preview" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
               )}
             >
@@ -440,32 +440,34 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               {activeTab === "preview" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
             </button>
           </div>
-          {activeTab === "markdown" && (
-            <div className="flex bg-white/5 p-1 rounded-lg gap-1 border border-white/5 ml-auto mr-8">
-              <button 
-                onClick={() => setMarkdownView("edit")}
-                className={cn(
-                  "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
-                  markdownView === "edit" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
-                )}
-              >
-                Raw Source
-              </button>
-              <button 
-                onClick={() => setMarkdownView("render")}
-                className={cn(
-                  "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
-                  markdownView === "render" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
-                )}
-              >
-                Secure Render
-              </button>
-            </div>
-          )}
-          <button onClick={handleCopy} className="text-zinc-600 hover:text-white transition-colors flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
-            <Copy className="w-3.5 h-3.5" />
-            <span>Copy Stream</span>
-          </button>
+          <div className="flex items-center gap-4 ml-8 shrink-0">
+            {activeTab === "markdown" && (
+              <div className="flex bg-white/5 p-1 rounded-lg gap-1 border border-white/5">
+                <button 
+                  onClick={() => setMarkdownView("edit")}
+                  className={cn(
+                    "px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
+                    markdownView === "edit" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+                  )}
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => setMarkdownView("render")}
+                  className={cn(
+                    "px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
+                    markdownView === "render" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+                  )}
+                >
+                  Secure
+                </button>
+              </div>
+            )}
+            <button onClick={handleCopy} className="text-zinc-600 hover:text-white transition-colors flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold">
+              <Copy className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Copy Stream</span>
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
@@ -475,25 +477,25 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               ref={contentRef}
               className="flex-1 overflow-auto bg-[#0a0a0a] custom-scrollbar relative"
             >
-              <div className="flex flex-col items-center py-20 gap-10">
+              <div className="flex flex-col items-center py-10 md:py-20 gap-6 md:gap-10">
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="w-[210mm] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.8)] text-black min-h-[297mm] rounded-sm relative flex flex-col"
+                  className="w-[210mm] origin-top bg-white shadow-[0_40px_100px_rgba(0,0,0,0.8)] text-black min-h-[297mm] rounded-sm relative flex flex-col scale-[0.4] sm:scale-[0.6] md:scale-[0.8] lg:scale-100 mb-[-150mm] sm:mb-[-100mm] md:mb-[-40mm] lg:mb-0"
                 >
                   {isPreviewLoading && !docxBlob && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm animate-pulse">
                       <div className="flex flex-col items-center gap-4">
                         <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                        <span className="text-[10px] font-bold text-black uppercase tracking-widest">Compiling Hardware Preview...</span>
+                        <span className="text-[10px] font-bold text-black uppercase tracking-widest text-center px-4">Compiling Hardware Preview...</span>
                       </div>
                     </div>
                   )}
-                  <div ref={previewRef} className="w-full h-full p-8 overflow-visible docx-preview-container flex-1" />
+                  <div ref={previewRef} className="w-full h-full p-6 md:p-8 overflow-visible docx-preview-container flex-1" />
                 </motion.div>
                 
                 {/* Information Footer for Preview */}
-                <div className="w-[210mm] flex justify-between items-center px-2 opacity-30">
+                <div className="w-full max-w-[210mm] hidden md:flex justify-between items-center px-2 opacity-30">
                   <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">RECON_UNIT_01 // A4_SPEC</span>
                   <div className="h-px flex-1 mx-8 bg-white/10" />
                   <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">V_4.5_STABLE</span>
@@ -547,25 +549,25 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
       </main>
 
       {/* Bottom Status Bar */}
-      <footer className="h-10 border-t border-white/5 flex items-center justify-between px-8 bg-[#030303] text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
-        <div className="flex items-center gap-12">
-          <div className="flex items-center gap-2.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
-            <span className="text-zinc-400">Pipeline Ready</span>
+      <footer className="h-10 border-t border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] text-[8px] md:text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
+        <div className="flex items-center gap-6 md:gap-12">
+          <div className="flex items-center gap-2 text-zinc-400">
+            <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
+            <span className="hidden sm:inline">Pipeline Ready</span>
           </div>
-          <div className="flex gap-6">
-            <span>Payload: {liveMarkdown.split(/\s+/).filter(Boolean).length} UTF-8 Units</span>
-            <span>Density: {liveMarkdown.length} Characters</span>
+          <div className="flex gap-4 md:gap-6">
+            <span className="hidden md:inline">Payload: {liveMarkdown.split(/\s+/).filter(Boolean).length} UTF-8 Units</span>
+            <span>Density: {liveMarkdown.length} Chars</span>
           </div>
         </div>
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4 md:gap-8">
+          <div className="hidden sm:flex items-center gap-2">
             <span className="text-zinc-800">Engine:</span>
-            <span className="text-zinc-500 font-mono">RECON-GLM-4.5</span>
+            <span className="text-zinc-500 font-mono">RECON-GLM</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-zinc-800">Access:</span>
-            <span className="text-zinc-500 font-mono">OPEN-ROUTER-SECURE</span>
+            <span className="text-zinc-800 hidden sm:inline">Access:</span>
+            <span className="text-zinc-500 font-mono truncate max-w-[80px] sm:max-w-none">OPEN-ROUTER</span>
           </div>
         </div>
       </footer>

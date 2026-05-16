@@ -52,8 +52,8 @@ export function ProcessingState() {
       <div className="absolute inset-0 dashed-grid opacity-10" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent pointer-events-none" />
       
-      <div className="relative flex flex-col items-center gap-16 scale-110">
-        <div className="relative w-32 h-32 flex items-center justify-center">
+      <div className="relative flex flex-col items-center gap-12 md:gap-16 scale-90 md:scale-110">
+        <div className="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center">
           <motion.div 
             animate={{ rotate: 360 }}
             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
@@ -62,28 +62,28 @@ export function ProcessingState() {
           <motion.div 
             animate={{ rotate: -360 }}
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-4 border border-zinc-800/20 rounded-full border-dashed" 
+            className="absolute inset-3 md:inset-4 border border-zinc-800/20 rounded-full border-dashed" 
           />
           
-          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,0.15)] z-10">
+          <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,0.15)] z-10">
              <motion.div 
                animate={{ rotate: 360 }}
                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-               className="w-8 h-8 bg-black rounded-lg flex items-center justify-center"
+               className="w-6 h-6 md:w-8 md:h-8 bg-black rounded-lg flex items-center justify-center"
              >
-               <div className="w-1.5 h-4 bg-white/20 rounded-full" />
+               <div className="w-1 h-3 md:w-1.5 md:h-4 bg-white/20 rounded-full" />
              </motion.div>
           </div>
           
           {/* Scanning Effect */}
           <motion.div 
-            animate={{ y: [-64, 64, -64], opacity: [0, 1, 0] }}
+            animate={{ y: [-56, 56, -56], opacity: [0, 1, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="absolute left-0 right-0 h-10 bg-gradient-to-b from-transparent via-white/5 to-transparent z-20 pointer-events-none"
           />
         </div>
 
-        <div className="flex flex-col items-center gap-8 text-center max-w-sm">
+        <div className="flex flex-col items-center gap-6 md:gap-8 text-center max-w-[280px] md:max-w-sm">
           <div className="space-y-2">
             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em] block">Extraction Protocol</span>
             <div className="h-6 overflow-hidden">
@@ -93,7 +93,7 @@ export function ProcessingState() {
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
-                  className="text-lg font-light text-white italic font-serif"
+                  className="text-base md:text-lg font-light text-white italic font-serif"
                 >
                   {MESSAGES[index]}
                 </motion.p>
@@ -102,7 +102,7 @@ export function ProcessingState() {
           </div>
           
           <div className="flex flex-col items-center gap-4 w-full">
-             <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden relative">
+             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden relative">
                 <motion.div 
                   initial={{ width: "0%" }}
                   animate={{ width: `${progress}%` }}
@@ -110,9 +110,9 @@ export function ProcessingState() {
                   className="h-full bg-white relative z-10 shadow-[0_0_20px_white]"
                 />
              </div>
-             <div className="flex justify-between w-64 text-[10px] font-mono text-zinc-700 uppercase tracking-widest">
+             <div className="flex justify-between w-full text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
                <span>Status: Active</span>
-               <span>{progress.toFixed(0)}% Complete</span>
+               <span>{progress.toFixed(0)}%</span>
              </div>
           </div>
         </div>

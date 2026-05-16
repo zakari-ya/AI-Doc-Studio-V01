@@ -166,21 +166,21 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
         <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-white/10 rounded-br-2xl" />
       </motion.div>
 
-      <div className="flex flex-col items-center gap-12">
-        <div className="flex flex-wrap justify-center items-center gap-10 px-10 py-5 rounded-full bg-white/[0.02] border border-white/5 backdrop-blur-sm">
-          <div className="flex flex-col gap-1">
-            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Extraction Protocol</span>
-            <span className="text-[10px] font-mono font-medium text-zinc-400">ARCH-RECON v2.4</span>
+      <div className="flex flex-col items-center gap-8 md:gap-12">
+        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 px-6 md:px-10 py-4 md:py-5 rounded-3xl md:rounded-full bg-white/[0.02] border border-white/5 backdrop-blur-sm">
+          <div className="flex flex-col gap-1 items-center md:items-start">
+            <span className="text-[7px] md:text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Extraction Protocol</span>
+            <span className="text-[9px] md:text-[10px] font-mono font-medium text-zinc-400">ARCH-RECON v2.4</span>
           </div>
-          <div className="w-px h-8 bg-white/5 hidden sm:block" />
-          <div className="flex flex-col gap-1">
-            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Security Layer</span>
-            <span className="text-[10px] font-mono font-medium text-zinc-400">ENCRYPTED-AES</span>
+          <div className="w-px h-6 md:h-8 bg-white/5 hidden sm:block" />
+          <div className="flex flex-col gap-1 items-center md:items-start">
+            <span className="text-[7px] md:text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Security Layer</span>
+            <span className="text-[9px] md:text-[10px] font-mono font-medium text-zinc-400">ENCRYPTED-AES</span>
           </div>
-          <div className="w-px h-8 bg-white/5 hidden sm:block" />
-          <div className="flex flex-col gap-1">
-            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Data Retention</span>
-            <span className="text-[10px] font-mono font-medium text-emerald-500/60 uppercase">Volatile Memory Only</span>
+          <div className="w-px h-6 md:h-8 bg-white/5 hidden sm:block" />
+          <div className="flex flex-col gap-1 items-center md:items-start">
+            <span className="text-[7px] md:text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Data Retention</span>
+            <span className="text-[9px] md:text-[10px] font-mono font-medium text-emerald-500/60 uppercase">Volatile Only</span>
           </div>
         </div>
 
@@ -188,7 +188,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
           disabled={!selectedFile}
           onClick={() => selectedFile && onUpload(selectedFile)}
           className={cn(
-            "group relative px-16 py-6 rounded-full font-bold text-xs transition-all duration-500 flex items-center gap-4 overflow-hidden uppercase tracking-[0.3em]",
+            "group relative w-full sm:w-auto px-8 md:px-16 py-5 md:py-6 rounded-full font-bold text-[10px] md:text-xs transition-all duration-500 flex items-center justify-center gap-4 overflow-hidden uppercase tracking-[0.3em]",
             selectedFile 
               ? "bg-white text-black hover:scale-[1.02] active:scale-95 cursor-pointer shadow-[0_20px_50px_rgba(255,255,255,0.1)]" 
               : "bg-white/5 text-zinc-800 cursor-not-allowed border border-white/5 opacity-50"
