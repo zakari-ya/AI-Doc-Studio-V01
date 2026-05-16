@@ -10,17 +10,23 @@ import {
   Check,
   ChevronDown
 } from "lucide-react";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { Markdown } from "tiptap-markdown";
+import { renderAsync } from "docx-preview";
 import { cn } from "../lib/utils";
 import { ExportSchema } from "../lib/schemas";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import { 
+  Document, 
+  Packer, 
+  Paragraph, 
+  TextRun, 
+  HeadingLevel, 
+  Table, 
+  TableRow, 
+  TableCell, 
+  BorderStyle, 
+  WidthType,
+  AlignmentType,
+  VerticalAlign
+} from "docx";
 
 // Helper to parse inline formatting like bold
 function parseInlineFormatting(text: string): TextRun[] {
@@ -60,31 +66,189 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [liveMarkdown, setLiveMarkdown] = useState(markdown);
+  const [docxBlob, setDocxBlob] = useState<Blob | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   
   const contentRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link,
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Markdown,
-    ],
-    content: markdown,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-zinc max-w-none focus:outline-none min-h-[500px]',
+  const generateDocx = async (md: string) => {
+    const children: any[] = [];
+    const lines = md.split("\n");
+    let currentTableRows: TableRow[] = [];
+    let inTable = false;
+
+    const flushTable = () => {
+      if (inTable && currentTableRows.length > 0) {
+        children.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: currentTableRows,
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+            left: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+            right: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "E2E2E2" },
+          }
+        }));
+        children.push(new Paragraph({ text: "" }));
+        inTable = false;
+        currentTableRows = [];
+      }
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      // Table detection
+      const isTableLine = trimmedLine.startsWith("|") && trimmedLine.endsWith("|");
+      const isTableSeparator = isTableLine && trimmedLine.includes("-") && !/[a-zA-Z0-9]/.test(trimmedLine);
+
+      if (isTableLine) {
+        if (isTableSeparator) {
+          inTable = true;
+          continue; 
+        }
+        
+        const cellsData = trimmedLine.slice(1, -1).split("|").map(c => c.trim());
+        const row = new TableRow({
+          children: cellsData.map(cellText => new TableCell({
+            children: [new Paragraph({ 
+              children: parseInlineFormatting(cellText),
+              alignment: AlignmentType.LEFT 
+            })],
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
+          }))
+        });
+        currentTableRows.push(row);
+        inTable = true;
+        continue;
+      } else {
+        flushTable();
+      }
+
+      if (!trimmedLine) {
+        children.push(new Paragraph({ text: "" }));
+        continue;
+      }
+
+      // Headings
+      const hMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
+      if (hMatch) {
+        const level = hMatch[1].length;
+        const text = hMatch[2];
+        
+        let headingLevel: (typeof HeadingLevel)[keyof typeof HeadingLevel] = HeadingLevel.HEADING_1;
+        let fontSize = 32;
+        
+        if (level === 2) { 
+          headingLevel = HeadingLevel.HEADING_2;
+          fontSize = 28;
+        } else if (level === 3) {
+          headingLevel = HeadingLevel.HEADING_3;
+          fontSize = 24;
+        } else if (level >= 4) {
+          headingLevel = HeadingLevel.HEADING_4;
+          fontSize = 20;
+        }
+
+        children.push(new Paragraph({
+          heading: headingLevel,
+          children: [new TextRun({ text, bold: true, size: fontSize })],
+          spacing: { before: 400, after: 200 }
+        }));
+        continue;
+      }
+
+      // Bullet Lists
+      const bulletMatch = trimmedLine.match(/^[\-\+\*]\s+(.*)$/);
+      if (bulletMatch) {
+        const text = bulletMatch[1];
+        children.push(new Paragraph({
+          children: parseInlineFormatting(text),
+          bullet: { level: 0 },
+          spacing: { before: 100, after: 100 }
+        }));
+        continue;
+      }
+
+      // Plain Paragraph
+      children.push(new Paragraph({
+        children: parseInlineFormatting(trimmedLine),
+        spacing: { before: 150, after: 150 }
+      }));
+    }
+    
+    // Final flush
+    flushTable();
+
+    const doc = new Document({
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: "Helvetica",
+              size: 22, // 11pt
+              color: "262626", // zinc-800
+            },
+            paragraph: {
+              spacing: {
+                line: 360, // 1.5 line spacing
+              },
+            },
+          },
+        },
       },
-    },
-    onUpdate: ({ editor }) => {
-      setLiveMarkdown((editor.storage as any).markdown.getMarkdown());
-    },
-  });
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return await Packer.toBlob(doc);
+  };
+
+  useEffect(() => {
+    setIsPreviewLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const blob = await generateDocx(liveMarkdown);
+        setDocxBlob(blob);
+      } catch (err) {
+        console.error("Docx Generation Error:", err);
+      } finally {
+        setIsPreviewLoading(false);
+      }
+    }, 800); // Debounce DOCX generation
+    return () => clearTimeout(timer);
+  }, [liveMarkdown]);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function render() {
+      if (activeTab === "preview" && previewRef.current && docxBlob) {
+        try {
+          // Clear previous content
+          previewRef.current.innerHTML = "";
+          await renderAsync(docxBlob, previewRef.current, undefined, {
+            className: "docx-render",
+            inWrapper: false,
+          });
+        } catch (err) {
+          if (isMounted) console.error("Docx Preview Error:", err);
+        }
+      }
+    }
+
+    render();
+    return () => { isMounted = false; };
+  }, [docxBlob, activeTab]);
 
   const getCurrentMarkdown = async () => {
     return liveMarkdown;
@@ -165,90 +329,7 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
         return;
       }
 
-      const children: Paragraph[] = [];
-      const lines = currentMd.split("\n");
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        
-        if (!trimmedLine) {
-          children.push(new Paragraph({ text: "" }));
-          continue;
-        }
-
-        // Headings
-        const hMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
-        if (hMatch) {
-          const level = hMatch[1].length;
-          const text = hMatch[2];
-          
-          let headingLevel: (typeof HeadingLevel)[keyof typeof HeadingLevel] = HeadingLevel.HEADING_1;
-          let fontSize = 32;
-          
-          if (level === 2) { 
-            headingLevel = HeadingLevel.HEADING_2;
-            fontSize = 28;
-          } else if (level === 3) {
-            headingLevel = HeadingLevel.HEADING_3;
-            fontSize = 24;
-          } else if (level >= 4) {
-            headingLevel = HeadingLevel.HEADING_4;
-            fontSize = 20;
-          }
-
-          children.push(new Paragraph({
-            heading: headingLevel,
-            children: [new TextRun({ text, bold: true, size: fontSize })],
-            spacing: { before: 400, after: 200 }
-          }));
-          continue;
-        }
-
-        // Bullet Lists
-        const bulletMatch = trimmedLine.match(/^[\-\+\*]\s+(.*)$/);
-        if (bulletMatch) {
-          const text = bulletMatch[1];
-          children.push(new Paragraph({
-            children: parseInlineFormatting(text),
-            bullet: { level: 0 },
-            spacing: { before: 100, after: 100 }
-          }));
-          continue;
-        }
-
-        // Plain Paragraph
-        children.push(new Paragraph({
-          children: parseInlineFormatting(trimmedLine),
-          spacing: { before: 150, after: 150 }
-        }));
-      }
-
-      const doc = new Document({
-        styles: {
-          default: {
-            document: {
-              run: {
-                font: "Helvetica",
-                size: 22, // 11pt
-                color: "262626", // zinc-800
-              },
-              paragraph: {
-                spacing: {
-                  line: 360, // 1.5 line spacing
-                },
-              },
-            },
-          },
-        },
-        sections: [
-          {
-            properties: {},
-            children: children,
-          },
-        ],
-      });
-
-      const blob = await Packer.toBlob(doc);
+      const blob = await generateDocx(currentMd);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -361,34 +442,32 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
           {activeTab === "preview" ? (
             <div 
               ref={contentRef}
-              className="flex-1 overflow-auto bg-zinc-900/10 custom-scrollbar relative"
+              className="flex-1 overflow-auto bg-[#0a0a0a] custom-scrollbar relative"
             >
               <div className="flex flex-col items-center py-20 gap-10">
-                {/* Continuous Content Wrapper styled as A4 sheets */}
-                <div className="relative group">
-                  {/* Decorative Stack Effect */}
-                  <div className="absolute inset-0 bg-white shadow-xl translate-x-2 translate-y-2 rounded-sm -z-10 opacity-10" />
-                  <div className="absolute inset-0 bg-white shadow-xl translate-x-1 translate-y-1 rounded-sm -z-10 opacity-20" />
-                  
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="w-[210mm] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.6)] text-black p-[25.4mm] rounded-sm relative min-h-[297mm]"
-                  >
-                    {/* Visual Page Break Markers (Simulated) */}
-                    <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                      <div className="h-[297mm] border-b border-black/[0.03] w-full" />
-                      <div className="h-[297mm] border-b border-black/[0.03] w-full" />
-                      <div className="h-[297mm] border-b border-black/[0.03] w-full" />
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-[210mm] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.8)] text-black min-h-[297mm] rounded-sm relative flex flex-col"
+                >
+                  {isPreviewLoading && !docxBlob && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm animate-pulse">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] font-bold text-black uppercase tracking-widest">Compiling Hardware Preview...</span>
+                      </div>
                     </div>
-
-                    <div className="relative z-10 w-full text-left">
-                      <EditorContent editor={editor} />
-                    </div>
-                  </motion.div>
+                  )}
+                  <div ref={previewRef} className="w-full h-full p-8 overflow-visible docx-preview-container flex-1" />
+                </motion.div>
+                
+                {/* Information Footer for Preview */}
+                <div className="w-[210mm] flex justify-between items-center px-2 opacity-30">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">RECON_UNIT_01 // A4_SPEC</span>
+                  <div className="h-px flex-1 mx-8 bg-white/10" />
+                  <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">V_4.5_STABLE</span>
                 </div>
               </div>
-              {/* Decoration */}
               <div className="absolute inset-0 dashed-grid opacity-5 pointer-events-none" />
             </div>
           ) : (
@@ -396,25 +475,30 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               ref={contentRef}
               className="flex-1 p-10 font-mono text-[12px] leading-relaxed overflow-y-auto selection:bg-white/10 custom-scrollbar bg-[#030303]"
             >
-              {(activeTab === "markdown" ? liveMarkdown : original).split("\n").map((line, i) => (
-                <div key={i} className="flex group max-w-5xl mx-auto">
-                  <div className="w-16 text-zinc-800 select-none text-left pr-4 shrink-0 font-mono text-[10px] group-hover:text-zinc-600 transition-colors uppercase tracking-tighter">
-                    {String(i + 1).padStart(4, '0')}
-                  </div>
-                  <div className={cn(
-                    "break-words whitespace-pre-wrap transition-colors",
-                    line.startsWith("#") ? "text-white font-bold" : "text-zinc-400 group-hover:text-zinc-300",
-                    activeTab === "original" && "text-zinc-600 font-normal italic"
-                  )}>
-                    {line.startsWith("#") ? (
-                      <>
-                        <span className="text-zinc-600 mr-2">{"#".repeat(line.match(/^#+/)?.[0].length || 0)}</span>
-                        {line.replace(/^#+/, "")}
-                      </>
-                    ) : line}
-                  </div>
+              {activeTab === "markdown" ? (
+                <div className="max-w-5xl mx-auto h-full">
+                  <textarea
+                    value={liveMarkdown}
+                    onChange={(e) => setLiveMarkdown(e.target.value)}
+                    spellCheck={false}
+                    className="w-full h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar pb-20"
+                    placeholder="Engineering stream active..."
+                  />
                 </div>
-              ))}
+              ) : (
+                original.split("\n").map((line, i) => (
+                  <div key={i} className="flex group max-w-5xl mx-auto">
+                    <div className="w-16 text-zinc-800 select-none text-left pr-4 shrink-0 font-mono text-[10px] group-hover:text-zinc-600 transition-colors uppercase tracking-tighter">
+                      {String(i + 1).padStart(4, '0')}
+                    </div>
+                    <div className={cn(
+                      "break-words whitespace-pre-wrap transition-colors text-zinc-600 font-normal italic"
+                    )}>
+                      {line}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
