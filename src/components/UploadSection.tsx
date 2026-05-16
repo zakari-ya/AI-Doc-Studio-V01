@@ -1,6 +1,7 @@
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Upload, FileText, X, ArrowRight } from "lucide-react";
+import { fileTypeFromBuffer } from "file-type";
 import { cn } from "../lib/utils";
 import { FileUploadSchema } from "../lib/schemas";
 
@@ -12,6 +13,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: DragEvent) => {
@@ -23,41 +25,58 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const validateAndSetFile = async (file: File) => {
     setError(null);
-    const file = e.dataTransfer.files[0];
-    if (file) {
+    setIsAnalyzing(true);
+
+    try {
+      // 1. Structural Schema Validation (Zod)
       const validation = FileUploadSchema.safeParse({
         name: file.name,
         size: file.size,
         type: file.type,
       });
 
-      if (validation.success) {
-        setSelectedFile(file);
-      } else {
+      if (!validation.success) {
         setError(validation.error.issues[0].message);
+        setIsAnalyzing(false);
+        return;
       }
+
+      // 2. Deep Binary Signature Validation (file-type)
+      const arrayBuffer = await file.slice(0, 4100).arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const type = await fileTypeFromBuffer(uint8Array);
+
+      if (!type || type.mime !== "application/pdf") {
+        setError("Security Violation: File binary signature does not match PDF specification. Possible spoofing detected.");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // If passed both, set the file
+      setSelectedFile(file);
+    } catch (err) {
+      console.error("Analysis Error:", err);
+      setError("Analysis Fail: Could not verify file integrity binary signature.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      validateAndSetFile(file);
     }
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setError(null);
     if (file) {
-      const validation = FileUploadSchema.safeParse({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      });
-
-      if (validation.success) {
-        setSelectedFile(file);
-      } else {
-        setError(validation.error.issues[0].message);
-      }
+      validateAndSetFile(file);
     }
   };
 
@@ -101,7 +120,9 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
             )}
           >
             <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-              {selectedFile ? (
+              {isAnalyzing ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : selectedFile ? (
                 <FileText className="w-5 h-5 text-white" />
               ) : (
                 <Upload className="w-5 h-5 text-white/40 group-hover:text-white transition-colors" />
@@ -111,13 +132,15 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
 
           <div className="text-center space-y-3">
             <h3 className="text-xl font-light text-white tracking-tight">
-              {selectedFile ? selectedFile.name : error ? "Upload Failed" : "Buffer Document"}
+              {isAnalyzing ? "Analyzing Signature..." : selectedFile ? selectedFile.name : error ? "Upload Failed" : "Buffer Document"}
             </h3>
             <p className={cn(
               "text-[10px] max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.2em] font-bold transition-colors",
               error ? "text-red-500" : "text-zinc-500"
             )}>
-              {selectedFile 
+              {isAnalyzing 
+                ? "Verifying Real Binary Protocol..."
+                : selectedFile 
                 ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB • STRUCTURAL HIERARCHY MAPPED` 
                 : error ? error : "Drop PDF here or initialize local file system access"}
             </p>

@@ -8,7 +8,7 @@
   "description": "Advanced multi-modal engine for structural document recovery and semantic markdown transformation.",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/338/338043.png",
+      "src": "favicone.png",
       "sizes": "512x512",
       "type": "image/png"
     }
