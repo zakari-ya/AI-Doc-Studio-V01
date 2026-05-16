@@ -27,18 +27,6 @@ export default function App() {
     setError(null);
 
     try {
-      // Rate Limit Check for OCR/Extraction Pipeline
-      const ocrCheck = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name })
-      });
-
-      if (!ocrCheck.ok) {
-        const errorData = await ocrCheck.json().catch(() => ({}));
-        throw new Error(errorData.message || "OCR Reconstruction rate limit reached. Please wait.");
-      }
-
       const raw = await extractTextFromPDF(file);
       setOriginalText(raw);
       const reconstructed = await reconstructDocument(raw);

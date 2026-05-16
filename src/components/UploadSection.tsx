@@ -54,21 +54,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
         return;
       }
 
-      // 3. Server-Side Rate Limiting & Verification
-      const verifyResponse = await fetch("/api/upload/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size })
-      });
-
-      if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json().catch(() => ({}));
-        setError(errorData.message || "Upload rate limit exceeded. Please wait.");
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // If passed all, set the file
+      // If passed both, set the file
       setSelectedFile(file);
     } catch (err) {
       console.error("Analysis Error:", err);

@@ -336,20 +336,6 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
         return;
       }
 
-      // Rate Limiting authorization
-      const authResponse = await fetch("/api/export/docx", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName, format: "docx" })
-      });
-
-      if (!authResponse.ok) {
-        const errorData = await authResponse.json().catch(() => ({}));
-        alert(errorData.message || "Export rate limit reached. Please try again in a minute.");
-        setIsExporting(false);
-        return;
-      }
-
       const blob = await generateDocx(currentMd);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
