@@ -2,6 +2,7 @@ import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Upload, FileText, X, ArrowRight } from "lucide-react";
 import { cn } from "../lib/utils";
+import { FileUploadSchema } from "../lib/schemas";
 
 interface UploadSectionProps {
   onUpload: (file: File) => void;
@@ -28,10 +29,16 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
     setError(null);
     const file = e.dataTransfer.files[0];
     if (file) {
-      if (file.type === "application/pdf") {
+      const validation = FileUploadSchema.safeParse({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+
+      if (validation.success) {
         setSelectedFile(file);
       } else {
-        setError("Invalid format: System accepts PDF reconstruction only.");
+        setError(validation.error.issues[0].message);
       }
     }
   };
@@ -40,10 +47,16 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
     const file = e.target.files?.[0];
     setError(null);
     if (file) {
-      if (file.type === "application/pdf") {
+      const validation = FileUploadSchema.safeParse({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+
+      if (validation.success) {
         setSelectedFile(file);
       } else {
-        setError("Invalid format: System accepts PDF reconstruction only.");
+        setError(validation.error.issues[0].message);
       }
     }
   };

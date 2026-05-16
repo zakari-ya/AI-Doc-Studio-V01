@@ -1,4 +1,12 @@
+import { AIReconstructionSchema } from "./schemas";
+
 export async function reconstructDocument(rawText: string) {
+  // Validate input
+  const validation = AIReconstructionSchema.safeParse({ rawText });
+  if (!validation.success) {
+    throw new Error(`Validation Error: ${validation.error.issues[0].message}`);
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OpenRouter API key is required. Please set OPENROUTER_API_KEY in your environment.");

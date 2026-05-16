@@ -19,6 +19,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Markdown } from "tiptap-markdown";
 import { cn } from "../lib/utils";
+import { ExportSchema } from "../lib/schemas";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
 
 // Helper to parse inline formatting like bold
@@ -106,6 +107,17 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
 
   const exportAsMd = async () => {
     const currentMd = await getCurrentMarkdown();
+    const validation = ExportSchema.safeParse({
+      markdown: currentMd,
+      fileName,
+      format: "md",
+    });
+
+    if (!validation.success) {
+      alert(`Export Error: ${validation.error.issues[0].message}`);
+      return;
+    }
+
     const blob = new Blob([currentMd], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -117,6 +129,17 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
 
   const exportAsTxt = async () => {
     const currentMd = await getCurrentMarkdown();
+    const validation = ExportSchema.safeParse({
+      markdown: currentMd,
+      fileName,
+      format: "txt",
+    });
+
+    if (!validation.success) {
+      alert(`Export Error: ${validation.error.issues[0].message}`);
+      return;
+    }
+
     const blob = new Blob([currentMd], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -130,6 +153,18 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
     setIsExporting(true);
     try {
       const currentMd = await getCurrentMarkdown();
+      const validation = ExportSchema.safeParse({
+        markdown: currentMd,
+        fileName,
+        format: "docx",
+      });
+
+      if (!validation.success) {
+        alert(`Export Error: ${validation.error.issues[0].message}`);
+        setIsExporting(false);
+        return;
+      }
+
       const children: Paragraph[] = [];
       const lines = currentMd.split("\n");
 
