@@ -27,6 +27,14 @@ export const ExportSchema = z.object({
   format: z.enum(["md", "txt", "docx"]),
 });
 
+/**
+ * Schema for AI Generated Content
+ */
+export const AIOutputSchema = z.object({
+  content: z.string().min(1, "AI output is empty").max(1000000, "AI output is excessively large"),
+});
+
 export type AIReconstructionRequest = z.infer<typeof AIReconstructionSchema>;
 export type FileUploadRequest = z.infer<typeof FileUploadSchema>;
 export type ExportRequest = z.infer<typeof ExportSchema>;
+export type AIOutputResponse = z.infer<typeof AIOutputSchema>;

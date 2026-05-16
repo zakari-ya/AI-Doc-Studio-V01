@@ -10,9 +10,13 @@ import {
   Check,
   ChevronDown
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 import { renderAsync } from "docx-preview";
 import { cn } from "../lib/utils";
 import { ExportSchema } from "../lib/schemas";
+import { secureMarkdown } from "../lib/sanitizer";
 import { 
   Document, 
   Packer, 
@@ -73,8 +77,11 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
   const previewRef = useRef<HTMLDivElement>(null);
   
   const generateDocx = async (md: string) => {
+    // 1. Sanitize input Markdown to remove dangerous HTML tags before parsing
+    const securedMd = secureMarkdown(md);
+    
     const children: any[] = [];
-    const lines = md.split("\n");
+    const lines = securedMd.split("\n");
     let currentTableRows: TableRow[] = [];
     let inTable = false;
 
@@ -343,6 +350,8 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
     }
   };
 
+  const [markdownView, setMarkdownView] = useState<"edit" | "render">("edit");
+
   return (
     <div className="flex flex-col h-screen bg-[#030303] text-zinc-300 font-sans overflow-hidden select-none">
       {/* Header Navigation */}
@@ -431,6 +440,28 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               {activeTab === "preview" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
             </button>
           </div>
+          {activeTab === "markdown" && (
+            <div className="flex bg-white/5 p-1 rounded-lg gap-1 border border-white/5 ml-auto mr-8">
+              <button 
+                onClick={() => setMarkdownView("edit")}
+                className={cn(
+                  "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
+                  markdownView === "edit" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+                )}
+              >
+                Raw Source
+              </button>
+              <button 
+                onClick={() => setMarkdownView("render")}
+                className={cn(
+                  "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
+                  markdownView === "render" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
+                )}
+              >
+                Secure Render
+              </button>
+            </div>
+          )}
           <button onClick={handleCopy} className="text-zinc-600 hover:text-white transition-colors flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
             <Copy className="w-3.5 h-3.5" />
             <span>Copy Stream</span>
@@ -476,14 +507,25 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               className="flex-1 p-10 font-mono text-[12px] leading-relaxed overflow-y-auto selection:bg-white/10 custom-scrollbar bg-[#030303]"
             >
               {activeTab === "markdown" ? (
-                <div className="max-w-5xl mx-auto h-full">
-                  <textarea
-                    value={liveMarkdown}
-                    onChange={(e) => setLiveMarkdown(e.target.value)}
-                    spellCheck={false}
-                    className="w-full h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar pb-20"
-                    placeholder="Engineering stream active..."
-                  />
+                <div className="max-w-5xl mx-auto h-full w-full">
+                  {markdownView === "edit" ? (
+                    <textarea
+                      value={liveMarkdown}
+                      onChange={(e) => setLiveMarkdown(e.target.value)}
+                      spellCheck={false}
+                      className="w-full h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar pb-20"
+                      placeholder="Engineering stream active..."
+                    />
+                  ) : (
+                    <div className="prose prose-invert prose-zinc max-w-none pb-20 rich-markdown-view">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]} 
+                        rehypePlugins={[rehypeSanitize]}
+                      >
+                        {liveMarkdown}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               ) : (
                 original.split("\n").map((line, i) => (

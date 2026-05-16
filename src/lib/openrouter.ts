@@ -1,10 +1,11 @@
-import { AIReconstructionSchema } from "./schemas";
+import { AIReconstructionSchema, AIOutputSchema } from "./schemas";
+import { secureMarkdown } from "./sanitizer";
 
 export async function reconstructDocument(rawText: string) {
-  // Validate input
+  // 1. INPUT VALIDATION (MANDATORY)
   const validation = AIReconstructionSchema.safeParse({ rawText });
   if (!validation.success) {
-    throw new Error(`Validation Error: ${validation.error.issues[0].message}`);
+    throw new Error(`Input Validation Error: ${validation.error.issues[0].message}`);
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -38,17 +39,12 @@ export async function reconstructDocument(rawText: string) {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin, // Required by OpenRouter
+        "HTTP-Referer": window.location.origin,
         "X-Title": "AI Document Reconstruction Studio",
       },
       body: JSON.stringify({
         model: model,
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
       })
     });
@@ -59,7 +55,16 @@ export async function reconstructDocument(rawText: string) {
     }
 
     const data = await response.json();
-    return data.choices[0].message.content || "Failed to reconstruct document.";
+    const rawOutput = data.choices[0].message.content || "";
+
+    // 2. OUTPUT VALIDATION (ZOD)
+    const outputValidation = AIOutputSchema.safeParse({ content: rawOutput });
+    if (!outputValidation.success) {
+      throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
+    }
+
+    // 3. SANITIZATION (DOMPurify)
+    return secureMarkdown(outputValidation.data.content);
   } catch (error) {
     console.error("OpenRouter Reconstruction Error:", error);
     throw error;
