@@ -123,3 +123,10 @@
     @apply bg-zinc-50/30;
   }
 }
+
+.docx-render {
+  padding: 35pt !important;
+  width: 595.3pt !important;
+  min-height: 841.9pt !important;
+  margin: -32px !important;
+}
