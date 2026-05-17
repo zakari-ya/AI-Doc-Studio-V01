@@ -115,20 +115,20 @@
     @apply border-l-4 border-zinc-200 pl-4 italic text-zinc-600 my-6;
   }
 
-  /* Table Specific Styling */
-  .prose table {
-    @apply border-collapse table-auto w-full border border-zinc-200 my-6;
+  /* Table Specific Styling for Dark Mode */
+  .prose.prose-invert table {
+    @apply border-collapse table-auto w-full border border-white/10 my-6;
   }
 
-  .prose th, .prose td {
-    @apply border border-zinc-200 p-3 text-left align-top min-w-[100px];
+  .prose.prose-invert th, .prose.prose-invert td {
+    @apply border border-white/10 p-3 text-left align-top min-w-[100px];
   }
 
-  .prose th {
-    @apply bg-zinc-50/50 font-bold text-zinc-900;
+  .prose.prose-invert th {
+    @apply bg-white/5 font-bold text-white;
   }
 
-  .prose tr:nth-child(even) {
-    @apply bg-zinc-50/30;
+  .prose.prose-invert tr:nth-child(even) {
+    @apply bg-white/[0.02];
   }
 }

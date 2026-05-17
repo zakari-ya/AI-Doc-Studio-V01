@@ -356,9 +356,9 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
   const [markdownView, setMarkdownView] = useState<"edit" | "render">("edit");
 
   return (
-    <div className="flex flex-col h-screen bg-[#030303] text-zinc-300 font-sans overflow-hidden select-none">
+    <div className="flex flex-col min-h-screen bg-[#030303] text-zinc-300 font-sans overflow-hidden select-none">
       {/* Header Navigation - Mobile Optimized PWA Style */}
-      <header className="h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] z-50">
+      <header className="h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] z-50 shrink-0">
         <div className="flex items-center gap-3">
           <span className="font-bold text-white tracking-tight text-sm md:text-base">AI Document Studio</span>
         </div>
@@ -410,12 +410,12 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
         </div>
       </header>
 
-      {/* Main Workspace */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-[#030303] relative">
-        {/* Tab Bar - PWA Style */}
-        <div className="h-12 border-b border-white/5 flex items-center bg-[#111111]">
+      {/* Main Workspace - Adaptive Split View */}
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[#030303] relative">
+        {/* Tab Bar - Visible only on mobile to switch views */}
+        <div className="h-12 border-b border-white/5 flex items-center bg-[#111111] lg:hidden shrink-0">
           <button 
-            onClick={() => handleTabChange("markdown")}
+            onClick={() => setActiveTab("markdown")}
             className={cn(
               "flex-1 h-full text-[10px] font-bold uppercase tracking-widest transition-all relative flex items-center justify-center",
               activeTab === "markdown" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
@@ -426,7 +426,7 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
           </button>
           <div className="w-px h-4 bg-white/5" />
           <button 
-            onClick={() => handleTabChange("preview")}
+            onClick={() => setActiveTab("preview")}
             className={cn(
               "flex-1 h-full text-[10px] font-bold uppercase tracking-widest transition-all relative flex items-center justify-center",
               activeTab === "preview" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
@@ -437,106 +437,90 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
           </button>
         </div>
 
-        {/* Technical Chips Sub-header (Desktop only or scrollable) */}
-        <div className="h-10 border-b border-white/5 flex items-center px-4 bg-[#030303] gap-2 overflow-x-auto no-scrollbar">
-          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">OCR_STABLE</div>
-          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">LATEX</div>
-          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">v1.2.4</div>
-          
-          <div className="ml-auto flex items-center gap-2 shrink-0">
-             {activeTab === "markdown" && (
-                <div className="flex bg-white/5 p-0.5 rounded-md gap-1 border border-white/5">
-                  <button onClick={() => setMarkdownView("edit")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "edit" ? "bg-white/10 text-white" : "text-zinc-600")}>Edit</button>
-                  <button onClick={() => setMarkdownView("render")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "render" ? "bg-white/10 text-white" : "text-zinc-600")}>Secure</button>
-                </div>
-             )}
+        {/* Panel 1: Editor / Markdown View */}
+        <div className={cn(
+          "flex-1 flex flex-col min-w-0 border-r border-white/5",
+          activeTab !== "markdown" && "hidden lg:flex"
+        )}>
+          {/* Sub-header for Editor */}
+          <div className="h-10 border-b border-white/5 flex items-center px-4 bg-[#030303] gap-2 overflow-x-auto no-scrollbar shrink-0">
+            <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">EDITOR_STABLE</div>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="flex bg-white/5 p-0.5 rounded-md gap-1 border border-white/5">
+                <button onClick={() => setMarkdownView("edit")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "edit" ? "bg-white/10 text-white" : "text-zinc-600")}>Edit</button>
+                <button onClick={() => setMarkdownView("render")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "render" ? "bg-white/10 text-white" : "text-zinc-600")}>Read</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+             <div className="max-w-5xl mx-auto h-full w-full flex flex-col md:flex-row p-4 md:p-8">
+                {markdownView === "edit" ? (
+                  <div className="flex-1 flex overflow-hidden min-h-[400px] lg:h-full">
+                    <div className="hidden md:flex flex-col items-end pr-4 py-4 select-none border-r border-white/5 bg-[#030303]">
+                      {Array.from({ length: 100 }).map((_, i) => (
+                        <div key={i} className="text-[10px] font-mono text-zinc-800 leading-relaxed h-[18px]">
+                          {i + 1}
+                        </div>
+                      ))}
+                    </div>
+                    <textarea
+                      value={liveMarkdown}
+                      onChange={(e) => setLiveMarkdown(e.target.value)}
+                      spellCheck={false}
+                      className="flex-1 h-full bg-transparent text-zinc-300 font-mono text-[13px] md:text-[14px] leading-relaxed focus:outline-none resize-none custom-scrollbar px-6 py-4 pb-40"
+                      placeholder="Start typing..."
+                    />
+                  </div>
+                ) : (
+                  <div className="prose prose-invert prose-zinc max-w-none px-6 py-4 pb-40 rich-markdown-view w-full">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]} 
+                      rehypePlugins={[rehypeSanitize]}
+                    >
+                      {liveMarkdown}
+                    </ReactMarkdown>
+                  </div>
+                )}
+             </div>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {activeTab === "preview" ? (
-            <div 
-              ref={contentRef}
-              className="flex-1 overflow-auto bg-[#0a0a0a] custom-scrollbar relative"
+        {/* Panel 2: Preview Area */}
+        <div className={cn(
+          "flex-1 flex flex-col min-w-0 bg-[#0a0a0a] relative",
+          activeTab !== "preview" && "hidden lg:flex"
+        )}>
+          {/* Sub-header for Preview */}
+          <div className="h-10 border-b border-white/5 flex items-center px-4 bg-[#030303] gap-2 shrink-0">
+             <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">HARDWARE_PREVIEW</div>
+             {isPreviewLoading && (
+               <div className="flex items-center gap-2 ml-4">
+                 <div className="w-2 h-2 border border-white/20 border-t-white rounded-full animate-spin" />
+                 <span className="text-[8px] font-mono text-zinc-700 animate-pulse">Syncing...</span>
+               </div>
+             )}
+          </div>
+
+          <div className="flex-1 overflow-auto custom-scrollbar p-4 md:p-8 flex flex-col items-center">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-[210mm] aspect-[1/1.414] bg-white shadow-2xl text-black rounded-sm relative docx-preview-outer-container origin-top transform-gpu"
+              style={{ paddingBottom: '20px' }}
             >
-              <div className="flex flex-col items-center py-10 md:py-20 gap-6 md:gap-10">
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-[210mm] origin-top bg-white shadow-[0_40px_100px_rgba(0,0,0,0.8)] text-black min-h-[297mm] rounded-sm relative flex flex-col scale-[0.4] sm:scale-[0.6] md:scale-[0.8] lg:scale-100 mb-[-150mm] sm:mb-[-100mm] md:mb-[-40mm] lg:mb-0"
-                >
-                  {isPreviewLoading && !docxBlob && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm animate-pulse">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                        <span className="text-[10px] font-bold text-black uppercase tracking-widest text-center px-4">Compiling Hardware Preview...</span>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={previewRef} className="w-full h-full p-6 md:p-8 overflow-visible docx-preview-container flex-1" />
-                </motion.div>
-                
-                {/* Information Footer for Preview */}
-                <div className="w-full max-w-[210mm] hidden md:flex justify-between items-center px-2 opacity-30">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">RECON_UNIT_01 // A4_SPEC</span>
-                  <div className="h-px flex-1 mx-8 bg-white/10" />
-                  <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">V_4.5_STABLE</span>
-                </div>
-              </div>
-              <div className="absolute inset-0 dashed-grid opacity-5 pointer-events-none" />
-            </div>
-          ) : (
-            <div 
-              ref={contentRef}
-              className="flex-1 p-10 font-mono text-[12px] leading-relaxed overflow-y-auto selection:bg-white/10 custom-scrollbar bg-[#030303]"
-            >
-              {activeTab === "markdown" ? (
-                <div className="max-w-5xl mx-auto h-full w-full flex flex-col md:flex-row">
-                  {markdownView === "edit" ? (
-                    <div className="flex-1 flex overflow-hidden h-full">
-                      <div className="hidden md:flex flex-col items-end pr-4 py-10 select-none border-r border-white/5 bg-[#030303]">
-                        {Array.from({ length: 40 }).map((_, i) => (
-                          <div key={i} className="text-[10px] font-mono text-zinc-800 leading-relaxed h-[18px]">
-                            {i + 1}
-                          </div>
-                        ))}
-                      </div>
-                      <textarea
-                        value={liveMarkdown}
-                        onChange={(e) => setLiveMarkdown(e.target.value)}
-                        spellCheck={false}
-                        className="flex-1 h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar p-6 md:p-10 pb-40 md:pb-20"
-                        placeholder="Engineering stream active..."
-                      />
-                    </div>
-                  ) : (
-                    <div className="prose prose-invert prose-zinc max-w-none p-6 md:p-10 pb-40 md:pb-20 rich-markdown-view w-full">
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]} 
-                        rehypePlugins={[rehypeSanitize]}
-                      >
-                        {liveMarkdown}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                original.split("\n").map((line, i) => (
-                  <div key={i} className="flex group max-w-5xl mx-auto">
-                    <div className="w-16 text-zinc-800 select-none text-left pr-4 shrink-0 font-mono text-[10px] group-hover:text-zinc-600 transition-colors uppercase tracking-tighter">
-                      {String(i + 1).padStart(4, '0')}
-                    </div>
-                    <div className={cn(
-                      "break-words whitespace-pre-wrap transition-colors text-zinc-600 font-normal italic"
-                    )}>
-                      {line}
-                    </div>
+              {!docxBlob && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[10px] font-bold text-black uppercase tracking-widest text-center px-4">Initializing Render Pipe...</span>
                   </div>
-                ))
+                </div>
               )}
-            </div>
-          )}
+              <div ref={previewRef} className="w-full h-full p-4 md:p-12 docx-preview-container" />
+            </motion.div>
+          </div>
+          <div className="absolute inset-0 dashed-grid opacity-5 pointer-events-none" />
         </div>
       </main>
 

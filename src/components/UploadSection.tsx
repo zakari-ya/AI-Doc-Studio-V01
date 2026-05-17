@@ -87,15 +87,15 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
   };
 
   return (
-    <div className="space-y-8 md:space-y-16">
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 space-y-8 md:space-y-16 py-8 md:py-16">
       {/* Mobile-Friendly Header for Workspace Setup */}
-      <div className="md:hidden w-full space-y-4 mb-4">
+      <div className="md:hidden w-full space-y-4 mb-8">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg w-fit">
            <Database className="w-3 h-3 text-zinc-500" />
            <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Project Alpha</span>
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Initialize Workspace</h1>
-        <p className="text-sm text-zinc-500 leading-relaxed max-w-xs">Reconstruct technical documents with high-precision OCR and layout recovery.</p>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Initialize Workspace</h1>
+        <p className="text-sm sm:text-base text-zinc-500 leading-relaxed max-w-xs">Reconstruct technical documents with high-precision OCR and layout recovery.</p>
       </div>
 
       <motion.div

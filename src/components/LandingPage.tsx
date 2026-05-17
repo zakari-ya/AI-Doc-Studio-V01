@@ -29,9 +29,9 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-20 px-4">
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-6">
         <div className="absolute inset-0 dashed-grid opacity-5" />
-        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-12">
+        <div className="relative z-10 w-full max-w-7xl mx-auto text-center space-y-8 md:space-y-12">
           <div className="space-y-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -46,7 +46,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight text-white leading-[1.1]"
+              className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-white leading-[1.1] md:leading-[1.05]"
             >
               Reconstruct <br className="hidden md:block" />
               documents with <br className="hidden md:block" />
@@ -57,7 +57,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 1 }}
-              className="text-base md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light px-4"
+              className="text-sm sm:text-base md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light px-4"
             >
               Military-grade OCR and layout restoration for high-stakes archival workflows.
             </motion.p>
@@ -93,26 +93,20 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </motion.div>
 
       {/* Mockup Preview Section */}
-      <section className="px-4 py-20 md:py-40 bg-[#030303]">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-8 md:mb-12 gap-6">
-            <div className="space-y-4">
+      <section className="px-6 py-24 md:py-40 bg-[#030303]">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center md:items-end justify-between mb-12 md:mb-20 gap-8">
+            <div className="space-y-4 text-center md:text-left">
                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Laboratory Preview</span>
-               <h2 className="text-3xl md:text-4xl font-light text-white tracking-tight">Unified Reconstruction View</h2>
+               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-tight">Unified Reconstruction View</h2>
             </div>
-            <div className="flex md:hidden items-center gap-4 text-[9px] font-mono text-zinc-600">
-               <div className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
-                 99.8% FIDELITY
-               </div>
-            </div>
-            <div className="hidden md:flex items-center gap-4 text-[10px] font-mono text-zinc-600">
+            <div className="flex items-center gap-6 text-[10px] font-mono text-zinc-600">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
                  Confidence Score: 99.8%
                </div>
-               <div className="w-px h-4 bg-white/10" />
-               <span>Latency: 240ms</span>
+               <div className="hidden sm:block w-px h-4 bg-white/10" />
+               <span className="hidden sm:block">Latency: 240ms</span>
             </div>
           </div>
           
@@ -120,64 +114,65 @@ export function LandingPage({ onStart }: LandingPageProps) {
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-[#09090b] rounded-2xl border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden"
+            className="bg-[#09090b] rounded-[24px] md:rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden"
           >
-            <div className="h-12 border-b border-white/5 flex items-center px-6 gap-2 bg-zinc-950">
-              <div className="w-3 h-3 rounded-full bg-red-500/20" />
-              <div className="w-3 h-3 rounded-full bg-amber-500/20" />
-              <div className="w-3 h-3 rounded-full bg-emerald-500/20" />
-              <div className="ml-6 flex gap-6 text-[11px] font-mono text-zinc-500">
+            <div className="h-10 md:h-12 border-b border-white/5 flex items-center px-6 gap-2 bg-zinc-950 overflow-x-auto no-scrollbar">
+              <div className="w-3 h-3 rounded-full bg-red-500/20 shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/20 shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-emerald-500/20 shrink-0" />
+              <div className="ml-6 flex gap-6 text-[10px] md:text-[11px] font-mono text-zinc-500 shrink-0">
                  <span className="text-white/60 underline decoration-white/20 underline-offset-4">src/reconstruct.ts</span>
                  <span>raw_buffer.pdf</span>
                  <span>output.md</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 h-auto md:h-[600px]">
-               <div className="hidden md:block border-r border-white/5 p-10 font-mono text-[11px] space-y-6 opacity-30 select-none">
-                  <div className="space-y-2">
+            <div className="flex flex-col lg:flex-row h-auto lg:h-[700px]">
+               <div className="hidden lg:flex flex-col w-1/2 border-r border-white/5 p-12 font-mono text-[11px] space-y-8 opacity-30 select-none bg-black/40">
+                  <div className="space-y-3">
                     <div className="h-2 w-1/3 bg-white/20 rounded-full" />
                     <div className="h-2 w-2/3 bg-white/10 rounded-full" />
                   </div>
-                  <div className="aspect-[4/3] w-full bg-white/[0.02] border border-white/10 rounded-lg flex items-center justify-center relative overflow-hidden">
+                  <div className="aspect-[4/3] w-full bg-white/[0.02] border border-white/10 rounded-2xl flex items-center justify-center relative overflow-hidden">
                      <div className="absolute inset-0 dashed-grid opacity-10" />
-                     <Globe className="w-12 h-12 text-white/10" />
+                     <Globe className="w-16 h-16 text-white/5" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="h-2 w-full bg-white/10 rounded-full" />
                     <div className="h-2 w-3/4 bg-white/10 rounded-full" />
+                    <div className="h-2 w-5/6 bg-white/10 rounded-full" />
                     <div className="h-2 w-1/2 bg-white/10 rounded-full" />
                   </div>
                </div>
-               <div className="p-10 text-zinc-400 bg-zinc-950">
-                  <div className="flex flex-col gap-8">
-                    <div className="space-y-4">
-                       <h3 className="text-xl font-medium text-white italic font-serif">Executive Financial Overview</h3>
-                       <p className="text-xs leading-relaxed text-zinc-500">Analysis of quarterly performance based on structural extraction of tables from the annual report.</p>
+               <div className="flex-1 p-8 md:p-12 lg:p-16 text-zinc-400 bg-[#030303]">
+                  <div className="flex flex-col gap-10 max-w-2xl mx-auto">
+                    <div className="space-y-6">
+                       <h3 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white italic font-serif leading-tight">Executive Financial Overview</h3>
+                       <p className="text-sm md:text-base leading-relaxed text-zinc-500">Analysis of quarterly performance based on structural extraction of tables from the annual report.</p>
                     </div>
                     
-                    <div className="space-y-4 p-6 rounded-xl bg-white/[0.02] border border-white/5 font-mono text-[11px]">
-                       <div className="flex justify-between border-b border-white/5 pb-2 text-zinc-600">
+                    <div className="space-y-6 p-6 md:p-10 rounded-2xl md:rounded-3xl bg-white/[0.02] border border-white/5 font-mono text-[10px] md:text-[12px] overflow-x-auto">
+                       <div className="flex justify-between border-b border-white/5 pb-4 text-zinc-600 min-w-[300px]">
                           <span>// Structural Table Reconstruction</span>
                           <span>[VALIDATED]</span>
                        </div>
-                       <table className="w-full text-left">
+                       <table className="w-full text-left min-w-[300px]">
                           <thead>
                              <tr className="text-zinc-500 italic">
-                                <th className="py-2">Metric</th>
-                                <th className="py-2">Previous</th>
-                                <th className="py-2">Current</th>
+                                <th className="py-4">Metric</th>
+                                <th className="py-4">Previous</th>
+                                <th className="py-4">Current</th>
                              </tr>
                           </thead>
                           <tbody className="text-zinc-400">
                              <tr>
-                                <td className="py-2">Revenue</td>
-                                <td className="py-2 text-zinc-600">$1.2M</td>
-                                <td className="py-2 text-white font-bold">$1.48M</td>
+                                <td className="py-4">Revenue</td>
+                                <td className="py-4 text-zinc-600">$1.2M</td>
+                                <td className="py-4 text-white font-bold">$1.48M</td>
                              </tr>
                              <tr>
-                                <td className="py-2">EBITDA</td>
-                                <td className="py-2 text-zinc-600">18.4%</td>
-                                <td className="py-2 text-emerald-400">22.1%</td>
+                                <td className="py-4">EBITDA</td>
+                                <td className="py-4 text-zinc-600">18.4%</td>
+                                <td className="py-4 text-emerald-400 font-bold">22.1%</td>
                              </tr>
                           </tbody>
                        </table>
