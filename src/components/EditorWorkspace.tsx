@@ -8,7 +8,10 @@ import {
   Eye, 
   X,
   Check,
-  ChevronDown
+  ChevronDown,
+  Settings,
+  History,
+  Database
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -354,119 +357,99 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
 
   return (
     <div className="flex flex-col h-screen bg-[#030303] text-zinc-300 font-sans overflow-hidden select-none">
-      {/* Header Navigation */}
-      <header className="h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] backdrop-blur-xl z-50">
-        <div className="flex items-center gap-4 md:gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 md:w-6 md:h-6 bg-white rounded-md flex items-center justify-center">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-black rounded-sm"></div>
-            </div>
-            <span className="font-bold text-white tracking-tighter uppercase text-[10px] md:text-xs">RECON</span>
-          </div>
-          <div className="h-4 w-px bg-white/10 hidden md:block"></div>
-          <nav className="hidden md:flex items-center gap-6 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            <button onClick={onBack} className="hover:text-white transition-colors">WORKSPACE</button>
-            <span className="text-zinc-800">/</span>
-            <span className="text-zinc-400 truncate max-w-[200px]">{fileName}</span>
-          </nav>
+      {/* Header Navigation - Mobile Optimized PWA Style */}
+      <header className="h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] z-50">
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-white tracking-tight text-sm md:text-base">AI Document Studio</span>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
-          <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 border border-white/5 rounded-full bg-white/[0.02] text-[9px] font-bold uppercase tracking-widest text-zinc-500">
-            <div className={cn("w-1.5 h-1.5 rounded-full", copied ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-blue-500/40")}></div>
-            {copied ? "Buffer Copied" : "Fidelity: High"}
-          </div>
-
-          <div className="relative group">
-            <button className="flex items-center gap-2 md:gap-3 bg-white text-black px-4 md:px-6 py-2 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95">
-              <span>Export</span>
-              <Download className="w-3 h-3" />
-            </button>
-            <div className="absolute right-0 top-full mt-2 w-48 md:w-56 bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all z-50 shadow-2xl">
-              <div className="p-2 space-y-1">
-                <button onClick={exportAsMd} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Markdown (.md)</button>
-                <button onClick={exportAsTxt} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Plain Text (.txt)</button>
-                <button onClick={exportAsDocx} disabled={isExporting} className="w-full text-left px-4 py-3 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all flex justify-between items-center">
-                  <span>Word (.docx)</span>
-                  {isExporting && <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
-                </button>
+        <div className="flex items-center gap-2">
+          <button 
+            className="md:hidden px-3 py-1.5 bg-white text-black rounded-md text-[10px] font-bold uppercase tracking-wider active:scale-95"
+            onClick={() => {/* Potential new doc action */}}
+          >
+            New Doc
+          </button>
+          
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-1.5 px-4 py-2 border border-white/5 rounded-full bg-white/[0.02] text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+              <div className={cn("w-1.5 h-1.5 rounded-full", copied ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-blue-500/40")}></div>
+              {copied ? "Buffer Copied" : "Fidelity: High"}
+            </div>
+            
+            <div className="relative group">
+              <button className="flex items-center gap-3 bg-white text-black px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95">
+                <span>Export</span>
+                <Download className="w-3 h-3" />
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all z-50 shadow-2xl">
+                <div className="p-2 space-y-1">
+                  <button onClick={exportAsMd} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Markdown (.md)</button>
+                  <button onClick={exportAsTxt} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Plain Text (.txt)</button>
+                  <button onClick={exportAsDocx} disabled={isExporting} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all flex justify-between items-center">
+                    <span>Word (.docx)</span>
+                    {isExporting && <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
           
           <button 
-            onClick={onBack}
-            className="p-2 md:p-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 md:p-3 text-zinc-500 hover:text-white transition-colors"
           >
-            <X className="w-3.5 h-3.5 md:w-4 md:h-4 text-zinc-500" />
+            <Settings className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
+          
+          <button 
+            onClick={onBack}
+            className="p-2 md:p-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-colors md:hidden"
+          >
+            <X className="w-3.5 h-3.5 text-zinc-500" />
           </button>
         </div>
       </header>
 
       {/* Main Workspace */}
       <main className="flex-1 flex flex-col overflow-hidden bg-[#030303] relative">
-        {/* Tab Bar */}
-        <div className="h-12 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-zinc-950/30 backdrop-blur-md overflow-x-auto no-scrollbar">
-          <div className="flex gap-4 md:gap-8 shrink-0">
-            <button 
-              onClick={() => handleTabChange("markdown")}
-              className={cn(
-                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 whitespace-nowrap",
-                activeTab === "markdown" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
-              )}
-            >
-              Output Stream
-              {activeTab === "markdown" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
-            </button>
-            <button 
-              onClick={() => handleTabChange("original")}
-              className={cn(
-                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 whitespace-nowrap",
-                activeTab === "original" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
-              )}
-            >
-              Raw Structure
-              {activeTab === "original" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
-            </button>
-            <button 
-              onClick={() => handleTabChange("preview")}
-              className={cn(
-                "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative pb-4 pt-1 flex items-center gap-2 whitespace-nowrap",
-                activeTab === "preview" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
-              )}
-            >
-              <Eye className="w-3 h-3" />
-              Hardware Preview
-              {activeTab === "preview" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
-            </button>
-          </div>
-          <div className="flex items-center gap-4 ml-8 shrink-0">
-            {activeTab === "markdown" && (
-              <div className="flex bg-white/5 p-1 rounded-lg gap-1 border border-white/5">
-                <button 
-                  onClick={() => setMarkdownView("edit")}
-                  className={cn(
-                    "px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
-                    markdownView === "edit" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
-                  )}
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={() => setMarkdownView("render")}
-                  className={cn(
-                    "px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest rounded-md transition-all",
-                    markdownView === "render" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"
-                  )}
-                >
-                  Secure
-                </button>
-              </div>
+        {/* Tab Bar - PWA Style */}
+        <div className="h-12 border-b border-white/5 flex items-center bg-[#111111]">
+          <button 
+            onClick={() => handleTabChange("markdown")}
+            className={cn(
+              "flex-1 h-full text-[10px] font-bold uppercase tracking-widest transition-all relative flex items-center justify-center",
+              activeTab === "markdown" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
             )}
-            <button onClick={handleCopy} className="text-zinc-600 hover:text-white transition-colors flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-widest font-bold">
-              <Copy className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Copy Stream</span>
-            </button>
+          >
+            Markdown
+            {activeTab === "markdown" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
+          </button>
+          <div className="w-px h-4 bg-white/5" />
+          <button 
+            onClick={() => handleTabChange("preview")}
+            className={cn(
+              "flex-1 h-full text-[10px] font-bold uppercase tracking-widest transition-all relative flex items-center justify-center",
+              activeTab === "preview" ? "text-white" : "text-zinc-600 hover:text-zinc-400"
+            )}
+          >
+            Preview
+            {activeTab === "preview" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
+          </button>
+        </div>
+
+        {/* Technical Chips Sub-header (Desktop only or scrollable) */}
+        <div className="h-10 border-b border-white/5 flex items-center px-4 bg-[#030303] gap-2 overflow-x-auto no-scrollbar">
+          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">OCR_STABLE</div>
+          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">LATEX</div>
+          <div className="px-2 py-0.5 border border-white/10 rounded-sm text-[8px] font-mono text-zinc-600 bg-white/5 shrink-0 uppercase">v1.2.4</div>
+          
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+             {activeTab === "markdown" && (
+                <div className="flex bg-white/5 p-0.5 rounded-md gap-1 border border-white/5">
+                  <button onClick={() => setMarkdownView("edit")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "edit" ? "bg-white/10 text-white" : "text-zinc-600")}>Edit</button>
+                  <button onClick={() => setMarkdownView("render")} className={cn("px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all", markdownView === "render" ? "bg-white/10 text-white" : "text-zinc-600")}>Secure</button>
+                </div>
+             )}
           </div>
         </div>
 
@@ -509,17 +492,26 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
               className="flex-1 p-10 font-mono text-[12px] leading-relaxed overflow-y-auto selection:bg-white/10 custom-scrollbar bg-[#030303]"
             >
               {activeTab === "markdown" ? (
-                <div className="max-w-5xl mx-auto h-full w-full">
+                <div className="max-w-5xl mx-auto h-full w-full flex flex-col md:flex-row">
                   {markdownView === "edit" ? (
-                    <textarea
-                      value={liveMarkdown}
-                      onChange={(e) => setLiveMarkdown(e.target.value)}
-                      spellCheck={false}
-                      className="w-full h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar pb-20"
-                      placeholder="Engineering stream active..."
-                    />
+                    <div className="flex-1 flex overflow-hidden h-full">
+                      <div className="hidden md:flex flex-col items-end pr-4 py-10 select-none border-r border-white/5 bg-[#030303]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                          <div key={i} className="text-[10px] font-mono text-zinc-800 leading-relaxed h-[18px]">
+                            {i + 1}
+                          </div>
+                        ))}
+                      </div>
+                      <textarea
+                        value={liveMarkdown}
+                        onChange={(e) => setLiveMarkdown(e.target.value)}
+                        spellCheck={false}
+                        className="flex-1 h-full bg-transparent text-zinc-300 font-mono text-[12px] leading-relaxed focus:outline-none resize-none custom-scrollbar p-6 md:p-10 pb-40 md:pb-20"
+                        placeholder="Engineering stream active..."
+                      />
+                    </div>
                   ) : (
-                    <div className="prose prose-invert prose-zinc max-w-none pb-20 rich-markdown-view">
+                    <div className="prose prose-invert prose-zinc max-w-none p-6 md:p-10 pb-40 md:pb-20 rich-markdown-view w-full">
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]} 
                         rehypePlugins={[rehypeSanitize]}
@@ -548,27 +540,49 @@ export function EditorWorkspace({ markdown, original, fileName, onBack }: Editor
         </div>
       </main>
 
-      {/* Bottom Status Bar */}
-      <footer className="h-10 border-t border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] text-[8px] md:text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
-        <div className="flex items-center gap-6 md:gap-12">
-          <div className="flex items-center gap-2 text-zinc-400">
-            <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
-            <span className="hidden sm:inline">Pipeline Ready</span>
+      {/* Bottom Status Bar / Navigation */}
+      <footer className="h-14 md:h-10 border-t border-white/5 flex items-center bg-[#030303] text-[8px] md:text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] relative">
+        <div className="hidden md:flex flex-1 items-center justify-between px-8">
+          <div className="flex items-center gap-12">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
+              <span>Pipeline Ready</span>
+            </div>
+            <div className="flex gap-6">
+              <span>Payload: {liveMarkdown.split(/\s+/).filter(Boolean).length} UTF-8 Units</span>
+              <span>Density: {liveMarkdown.length} Chars</span>
+            </div>
           </div>
-          <div className="flex gap-4 md:gap-6">
-            <span className="hidden md:inline">Payload: {liveMarkdown.split(/\s+/).filter(Boolean).length} UTF-8 Units</span>
-            <span>Density: {liveMarkdown.length} Chars</span>
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-800">Engine:</span>
+              <span className="text-zinc-500 font-mono">RECON-GLM</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-800">Access:</span>
+              <span className="text-zinc-500 font-mono">OPEN-ROUTER</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-4 md:gap-8">
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-zinc-800">Engine:</span>
-            <span className="text-zinc-500 font-mono">RECON-GLM</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-800 hidden sm:inline">Access:</span>
-            <span className="text-zinc-500 font-mono truncate max-w-[80px] sm:max-w-none">OPEN-ROUTER</span>
-          </div>
+
+        {/* Mobile Navigation Interface (PWA Style) */}
+        <div className="flex md:hidden w-full h-full">
+           <button className="flex-1 flex flex-col items-center justify-center gap-1 text-white">
+             <FileText className="w-4 h-4" />
+             <span className="text-[7px]">Workspace</span>
+           </button>
+           <button className="flex-1 flex flex-col items-center justify-center gap-1 opacity-40">
+             <Database className="w-4 h-4" />
+             <span className="text-[7px]">Metadata</span>
+           </button>
+           <button className="flex-1 flex flex-col items-center justify-center gap-1 opacity-40">
+             <History className="w-4 h-4" />
+             <span className="text-[7px]">Versions</span>
+           </button>
+           <button className="flex-1 flex flex-col items-center justify-center gap-1 opacity-40">
+             <Settings className="w-4 h-4" />
+             <span className="text-[7px]">Layers</span>
+           </button>
         </div>
       </footer>
     </div>

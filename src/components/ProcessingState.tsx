@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { FileText, X } from "lucide-react";
 
 const MESSAGES = [
   "Analyzing document structure...",
@@ -47,92 +48,102 @@ export function ProcessingState() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030303] overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center bg-[#030303] overflow-hidden"
     >
-      <div className="absolute inset-0 dashed-grid opacity-10" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent pointer-events-none" />
+      <div className="absolute inset-0 dashed-grid opacity-[0.03]" />
       
-      <div className="relative flex flex-col items-center gap-12 md:gap-16 scale-90 md:scale-110">
-        <div className="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center">
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 border border-white/5 rounded-full" 
-          />
-          <motion.div 
-            animate={{ rotate: -360 }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-3 md:inset-4 border border-zinc-800/20 rounded-full border-dashed" 
-          />
-          
-          <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,0.15)] z-10">
-             <motion.div 
-               animate={{ rotate: 360 }}
-               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-               className="w-6 h-6 md:w-8 md:h-8 bg-black rounded-lg flex items-center justify-center"
-             >
-               <div className="w-1 h-3 md:w-1.5 md:h-4 bg-white/20 rounded-full" />
-             </motion.div>
-          </div>
-          
-          {/* Scanning Effect */}
-          <motion.div 
-            animate={{ y: [-56, 56, -56], opacity: [0, 1, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute left-0 right-0 h-10 bg-gradient-to-b from-transparent via-white/5 to-transparent z-20 pointer-events-none"
-          />
+      <div className="relative flex flex-col items-center h-full w-full max-w-lg">
+        {/* Header Branding for PWA feel */}
+        <header className="w-full h-14 flex items-center justify-between px-6 shrink-0 relative z-10">
+           <div className="flex items-center gap-3">
+             <FileText className="w-5 h-5 text-white" />
+             <span className="font-bold text-white text-sm">AI Studio</span>
+           </div>
+           <X className="w-5 h-5 text-zinc-500" />
+        </header>
+
+        {/* Mockup Preview Area */}
+        <div className="flex-1 w-full flex items-center justify-center px-6">
+           <motion.div 
+             initial={{ scale: 0.9, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             className="relative w-full aspect-[3/4] bg-[#0a0a0a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+           >
+              {/* Content Mockup */}
+              <div className="p-8 space-y-6">
+                 <div className="h-4 w-2/3 bg-white/10 rounded-md" />
+                 <div className="space-y-3">
+                   <div className="h-2 w-full bg-white/5 rounded-md" />
+                   <div className="h-2 w-full bg-white/5 rounded-md" />
+                   <div className="h-2 w-4/5 bg-white/5 rounded-md" />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4 pt-4">
+                   <div className="aspect-square bg-white/5 rounded-lg" />
+                   <div className="aspect-square bg-white/5 rounded-lg" />
+                 </div>
+                 <div className="space-y-3">
+                   <div className="h-2 w-full bg-white/5 rounded-md" />
+                   <div className="h-2 w-2/3 bg-white/5 rounded-md" />
+                 </div>
+              </div>
+              
+              {/* Scanline Effect */}
+              <motion.div 
+                animate={{ top: ["0%", "100%", "0%"] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                className="absolute left-0 right-0 h-2 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.2)] z-10"
+              />
+              
+              {/* Bottom Technical Overlay */}
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-black/60 backdrop-blur-md px-3 py-2 rounded-lg border border-white/5">
+                 <div className="px-2 py-0.5 border border-white/10 rounded text-[8px] font-mono text-zinc-500 bg-white/5">OCR_ACTIVE</div>
+                 <div className="text-[8px] font-mono text-zinc-700 tracking-wider">L:282 P:55</div>
+              </div>
+           </motion.div>
         </div>
 
-        <div className="flex flex-col items-center gap-6 md:gap-8 text-center max-w-[280px] md:max-w-sm">
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em] block">Extraction Protocol</span>
-            <div className="h-6 overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={index}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  className="text-base md:text-lg font-light text-white italic font-serif"
-                >
-                  {MESSAGES[index]}
-                </motion.p>
-              </AnimatePresence>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-center gap-4 w-full">
-             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden relative">
-                <motion.div 
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ type: "spring", stiffness: 50, damping: 20 }}
-                  className="h-full bg-white relative z-10 shadow-[0_0_20px_white]"
-                />
-             </div>
-             <div className="flex justify-between w-full text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
-               <span>Status: Active</span>
-               <span>{progress.toFixed(0)}%</span>
-             </div>
-          </div>
+        <div className="flex flex-col items-center gap-4 text-center px-8 py-12">
+          <h2 className="text-3xl font-light text-white tracking-tight leading-tight">Analyzing document structure...</h2>
+          <p className="text-zinc-500 text-sm leading-relaxed max-w-xs">Reconstructing layout and identifying metadata patterns for Project Alpha.</p>
         </div>
-      </div>
-
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 border border-white/5 rounded-full bg-white/[0.02] backdrop-blur-md">
-         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Hardware Acceleration Active / Secure Pipe</span>
-      </div>
-
-      {/* Decorative Binary Rain Overlay (Subtle) */}
-      <div className="absolute top-0 right-0 bottom-0 w-32 border-l border-white/5 opacity-20 hidden lg:block overflow-hidden pointer-events-none">
-        <motion.div 
-          animate={{ y: [0, -1000] }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          className="p-4 font-mono text-[8px] text-zinc-600 leading-none whitespace-pre"
-        >
-          {Array.from({ length: 100 }).map(() => (Math.random() > 0.5 ? "1" : "0")).join("\n")}
-          {Array.from({ length: 100 }).map(() => (Math.random() > 0.5 ? "1" : "0")).join("\n")}
-        </motion.div>
+        
+        {/* Bottom Task Bar */}
+        <div className="w-full bg-black/40 border-t border-white/5 p-8 space-y-4">
+           <div className="flex justify-between items-end">
+              <div className="space-y-1">
+                 <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Current Task</span>
+                 <div className="h-5 overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.p 
+                        key={index}
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        className="text-[12px] font-mono text-white"
+                      >
+                        {MESSAGES[index]}
+                      </motion.p>
+                    </AnimatePresence>
+                 </div>
+              </div>
+              <span className="text-[12px] font-mono text-white">{progress.toFixed(0)}%</span>
+           </div>
+           
+           <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <motion.div 
+                animate={{ width: `${progress}%` }}
+                className="h-full bg-white shadow-[0_0_15px_white]"
+              />
+           </div>
+           
+           <button className="w-full pt-4 flex items-center justify-center gap-3 text-[9px] font-bold text-zinc-500 uppercase tracking-[0.3em] hover:text-white transition-colors">
+              <div className="flex gap-0.5">
+                 <div className="w-0.5 h-3 bg-zinc-700" />
+                 <div className="w-0.5 h-3 bg-zinc-700" />
+              </div>
+              Pause Reconstruction
+           </button>
+        </div>
       </div>
     </motion.div>
   );

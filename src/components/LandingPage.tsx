@@ -10,51 +10,47 @@ export function LandingPage({ onStart }: LandingPageProps) {
   return (
     <div className="w-full flex flex-col bg-[#030303] text-zinc-300 font-sans selection:bg-white/10 overflow-x-hidden">
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
+      <header className="fixed top-0 left-0 right-0 h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 md:w-6 md:h-6 bg-white rounded-md flex items-center justify-center">
-            <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-black rounded-sm"></div>
-          </div>
-          <span className="font-bold text-white tracking-tighter uppercase text-[10px] md:text-sm">RECON STUDIO</span>
+          <span className="font-bold text-white tracking-tight text-sm md:text-lg">Studio</span>
         </div>
         <nav className="hidden md:flex items-center gap-12 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
           <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
           <a href="#tech" className="hover:text-white transition-colors">Protocol</a>
-          <a href="#faq" className="hover:text-white transition-colors">Knowledge</a>
         </nav>
-        <button
-          onClick={onStart}
-          className="text-[9px] md:text-[10px] font-bold text-black bg-white px-4 md:px-5 py-2 rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest active:scale-95"
-        >
-          Initialize
-        </button>
+        <div className="flex mr-2 md:mr-0">
+           <button
+             onClick={onStart}
+             className="px-4 py-1.5 bg-white text-black rounded-md text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-200 transition-all active:scale-95"
+           >
+             Initialize
+           </button>
+        </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-4 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 dashed-grid opacity-10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
-        
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-20 px-4">
+        <div className="absolute inset-0 dashed-grid opacity-5" />
         <div className="relative z-10 max-w-5xl mx-auto text-center space-y-12">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-500 gap-3"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            System Status: Nominal
-          </motion.div>
-          
           <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-3 px-4 py-1.5 border border-white/10 rounded-full bg-white/[0.02] backdrop-blur-sm shadow-2xl"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.2em]">v3 engine now active</span>
+            </motion.div>
+            
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-5xl sm:text-6xl md:text-8xl font-light tracking-tighter text-white leading-[0.9]"
+              className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight text-white leading-[1.1]"
             >
-              Document recovery <br />
-              <span className="italic font-serif text-zinc-500">at any complexity.</span>
+              Reconstruct <br className="hidden md:block" />
+              documents with <br className="hidden md:block" />
+              <span className="italic font-serif font-light text-zinc-500">surgical precision</span>
             </motion.h1>
             
             <motion.p
@@ -63,40 +59,38 @@ export function LandingPage({ onStart }: LandingPageProps) {
               transition={{ delay: 0.4, duration: 1 }}
               className="text-base md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light px-4"
             >
-              Advanced multi-modal engine for structural document recovery. Transform legacy PDFs into perfectly semantic Markdown with surgical fidelity.
+              Military-grade OCR and layout restoration for high-stakes archival workflows.
             </motion.p>
           </div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 px-4"
+            className="flex flex-col gap-4 max-w-xs mx-auto w-full"
           >
             <button
               onClick={onStart}
-              className="w-full sm:w-auto px-10 py-5 bg-white text-black rounded-full font-bold text-xs hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group uppercase tracking-widest"
+              className="w-full px-8 py-4 bg-white text-black rounded-lg font-bold text-xs hover:bg-zinc-200 transition-all uppercase tracking-widest flex items-center justify-center"
             >
-              Launch Studio
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              Start Reconstructing
             </button>
-            <button className="w-full sm:w-auto px-10 py-5 bg-white/5 border border-white/10 rounded-full font-bold text-xs hover:bg-white/10 transition-all text-white flex items-center justify-center gap-3 uppercase tracking-widest">
-              Protocol Specs
-              <Terminal className="w-4 h-4 opacity-50" />
+            <button className="w-full px-8 py-4 bg-white/5 border border-white/10 rounded-lg font-bold text-xs hover:bg-white/10 transition-all text-white uppercase tracking-widest flex items-center justify-center">
+              View Documentation
             </button>
           </motion.div>
         </div>
-
-        {/* Scroll Indicator */}
-        <motion.div 
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30"
-        >
-          <div className="w-px h-12 bg-gradient-to-b from-transparent to-white" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Vertical Scroll</span>
-        </motion.div>
       </section>
+
+      {/* Scroll Indicator */}
+      <motion.div 
+        animate={{ y: [0, 10, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30"
+      >
+        <div className="w-px h-12 bg-gradient-to-b from-transparent to-white" />
+        <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Vertical Scroll</span>
+      </motion.div>
 
       {/* Mockup Preview Section */}
       <section className="px-4 py-20 md:py-40 bg-[#030303]">
@@ -386,6 +380,27 @@ export function LandingPage({ onStart }: LandingPageProps) {
           </div>
         </div>
       </footer>
+      {/* PWA Navigation Mockup */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-950 border-t border-white/5 md:hidden flex items-center justify-center z-50 px-4">
+          <div className="flex w-full items-center justify-between text-zinc-600 font-bold text-[7px] uppercase tracking-widest">
+             <div className="flex flex-col items-center gap-1.5 text-white">
+                <Globe className="w-4 h-4" />
+                <span>Workspace</span>
+             </div>
+             <div className="flex flex-col items-center gap-1.5 opacity-40">
+                <Globe className="w-4 h-4" />
+                <span>Metadata</span>
+             </div>
+             <div className="flex flex-col items-center gap-1.5 opacity-40">
+                <Terminal className="w-4 h-4" />
+                <span>History</span>
+             </div>
+             <div className="flex flex-col items-center gap-1.5 opacity-40">
+                <Lock className="w-4 h-4" />
+                <span>Settings</span>
+             </div>
+          </div>
+      </div>
     </div>
   );
 }
