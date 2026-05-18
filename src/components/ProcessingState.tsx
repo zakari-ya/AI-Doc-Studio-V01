@@ -63,11 +63,11 @@ export function ProcessingState() {
         </header>
 
         {/* Mockup Preview Area */}
-        <div className="flex-1 w-full flex items-center justify-center p-4">
+        <div className="flex-1 w-full flex items-center justify-center p-2 md:p-4">
            <motion.div 
              initial={{ scale: 0.9, opacity: 0 }}
              animate={{ scale: 1, opacity: 1 }}
-             className="relative w-full max-w-sm aspect-[3/4] bg-[#0a0a0a] rounded-[32px] md:rounded-[48px] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden"
+             className="relative w-full max-w-sm aspect-[3/4] max-h-[25vh] sm:max-h-[30vh] md:max-h-[35vh] bg-[#0a0a0a] rounded-[32px] md:rounded-[48px] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden"
            >
               {/* Content Mockup */}
               <div className="p-10 space-y-8">
@@ -102,13 +102,13 @@ export function ProcessingState() {
            </motion.div>
         </div>
 
-        <div className="flex flex-col items-center gap-4 text-center px-8 py-12 md:py-20">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-white tracking-tight leading-tight">Analyzing document...</h2>
-          <p className="text-zinc-500 text-sm md:text-base leading-relaxed max-w-sm">Reconstructing layout and identifying metadata patterns with surgical precision.</p>
+        <div className="flex flex-col items-center gap-2 md:gap-4 text-center px-8 py-6 md:py-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-white tracking-tight leading-tight">Analyzing document...</h2>
+          <p className="text-zinc-500 text-xs md:text-sm leading-relaxed max-w-sm">Reconstructing layout and identifying metadata patterns with surgical precision.</p>
         </div>
         
         {/* Bottom Task Bar */}
-        <div className="w-full bg-black/40 border-t border-white/5 p-8 md:p-12 space-y-6">
+        <div className="w-full bg-black/40 border-t border-white/5 p-6 md:p-8 space-y-4 md:space-y-6">
            <div className="flex justify-between items-end">
               <div className="space-y-1.5">
                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Current Status</span>
@@ -135,14 +135,6 @@ export function ProcessingState() {
                 className="h-full bg-white shadow-[0_0_20px_white]"
               />
            </div>
-           
-           <button className="w-full pt-6 flex items-center justify-center gap-4 text-[10px] md:text-xs font-bold text-zinc-600 uppercase tracking-[0.4em] hover:text-white transition-colors">
-              <div className="flex gap-1">
-                 <div className="w-0.5 h-4 bg-zinc-800" />
-                 <div className="w-0.5 h-4 bg-zinc-800" />
-              </div>
-              Pause Protocol
-           </button>
         </div>
       </div>
     </motion.div>

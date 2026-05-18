@@ -76,7 +76,7 @@ export default function App() {
                   <p className="text-zinc-500 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] px-4">Select document for structural reconstruction</p>
                </header>
                <UploadSection onUpload={handleProcess} />
-               <div className="flex justify-center mt-12 md:mt-20">
+               <div className="flex justify-center mt-12 mb-12 md:mt-20">
                  <button 
                    onClick={() => setState("LANDING")}
                    className="text-[9px] md:text-[10px] font-bold text-zinc-700 hover:text-white uppercase tracking-[0.3em] md:tracking-[0.4em] transition-all flex items-center gap-3 md:gap-4 group"
@@ -100,6 +100,7 @@ export default function App() {
             original={originalText}
             fileName={fileName}
             onBack={handleReset}
+            onHome={() => setState("LANDING")}
           />
         )}
 

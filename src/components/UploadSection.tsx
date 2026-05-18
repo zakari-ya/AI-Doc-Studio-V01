@@ -191,25 +191,6 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
           {isAnalyzing ? "Analyzing Core..." : "Initialize Recovery"}
           <ArrowRight className={cn("w-4 h-4 transition-all duration-500", selectedFile ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2")} />
         </button>
-
-        <div className="flex md:hidden w-full h-16 mt-8 border-t border-white/5 pt-4">
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 text-white">
-            <FileText className="w-5 h-5" />
-            <span className="text-[8px] uppercase tracking-widest font-bold">Workspace</span>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-700">
-            <Database className="w-5 h-5" />
-            <span className="text-[8px] uppercase tracking-widest font-bold">Metadata</span>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-700">
-            <History className="w-5 h-5" />
-            <span className="text-[8px] uppercase tracking-widest font-bold">Versions</span>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-700">
-            <Settings className="w-5 h-5" />
-            <span className="text-[8px] uppercase tracking-widest font-bold">Layers</span>
-          </div>
-        </div>
       </div>
     </div>
   );
