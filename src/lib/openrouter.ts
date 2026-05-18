@@ -13,7 +13,7 @@ export async function reconstructDocument(rawText: string) {
     throw new Error("OpenRouter API key is required. Please set OPENROUTER_API_KEY in your environment.");
   }
 
-  const model = "z-ai/glm-4.5-air:free";
+  const model = "deepseek/deepseek-v4-flash:free";
   
   const prompt = `
     You are a document reconstruction expert. 
