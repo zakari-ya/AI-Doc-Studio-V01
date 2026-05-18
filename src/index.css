@@ -132,3 +132,48 @@
     @apply bg-white/[0.02];
   }
 }
+
+
+.docx-render {
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .docx-render {
+    padding: 35pt !important;
+    width: 595.3pt !important;
+    min-height: 841.9pt !important;
+    margin: 0 auto 24px auto !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .docx-render {
+    padding: 16px !important;
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 auto 16px auto !important;
+  }
+
+  /* Make sure tables inside the docx preview don't overflow on mobile */
+  .docx-render table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    word-break: break-word !important;
+  }
+
+  /* Make sure images fit their container */
+  .docx-render img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Force word breaks for long inline elements to avoid horizontal scrolling */
+  .docx-render p,
+  .docx-render span,
+  .docx-render div {
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+}
