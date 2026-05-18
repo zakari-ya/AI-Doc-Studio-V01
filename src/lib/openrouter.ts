@@ -40,7 +40,7 @@ export async function reconstructDocument(rawText: string) {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": window.location.origin,
-        "X-Title": "AI Document Reconstruction Studio",
+        "X-Title": "AI -Doc-Studio",
       },
       body: JSON.stringify({
         model: model,

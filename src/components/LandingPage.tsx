@@ -12,7 +12,8 @@ export function LandingPage({ onStart }: LandingPageProps) {
       {/* Navigation */}
       <header className="fixed top-0 left-0 right-0 h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-white tracking-tight text-sm md:text-lg">Studio</span>
+          <img src="/favicone.png" className="w-5 h-5 md:w-6 md:h-6 object-contain" alt="AI-Doc-Studio Logo" />
+          <span className="font-bold text-white tracking-tight text-sm md:text-lg">AI-Doc-Studio</span>
         </div>
         <nav className="hidden md:flex items-center gap-12 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
           <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
@@ -325,10 +326,8 @@ export function LandingPage({ onStart }: LandingPageProps) {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
-                  <div className="w-3 h-3 bg-black rounded-sm"></div>
-                </div>
-                <span className="font-bold text-white tracking-tighter uppercase text-sm">RECON STUDIO</span>
+                <img src="/favicone.png" className="w-6 h-6 object-contain" alt="AI -Doc-Studio Logo" />
+                <span className="font-bold text-white tracking-tighter uppercase text-sm">AI -Doc-Studio</span>
               </div>
               <p className="text-xs text-zinc-600 leading-relaxed max-w-xs uppercase tracking-widest font-bold">
                 The global standard for structural document recovery.
