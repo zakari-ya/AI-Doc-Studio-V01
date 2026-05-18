@@ -185,11 +185,6 @@ export function EditorWorkspace({
         flushTable();
       }
 
-      if (!trimmedLine) {
-        children.push(new Paragraph({ text: "" }));
-        continue;
-      }
-
       // Headings
       const hMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
       if (hMatch) {
@@ -229,17 +224,21 @@ export function EditorWorkspace({
           new Paragraph({
             children: parseInlineFormatting(text),
             bullet: { level: 0 },
-            spacing: { before: 100, after: 100 },
+            spacing: { after: 120 },
           }),
         );
         continue;
       }
 
       // Plain Paragraph
+      if (!trimmedLine) {
+        continue;
+      }
+
       children.push(
         new Paragraph({
           children: parseInlineFormatting(trimmedLine),
-          spacing: { before: 150, after: 150 },
+          spacing: { after: 120 },
         }),
       );
     }
@@ -258,7 +257,7 @@ export function EditorWorkspace({
             },
             paragraph: {
               spacing: {
-                line: 360, // 1.5 line spacing
+                line: 276, // 1.15 line spacing
               },
             },
           },
@@ -294,13 +293,15 @@ export function EditorWorkspace({
     let isMounted = true;
 
     async function render() {
-      if (activeTab === "preview" && previewRef.current && docxBlob) {
+      if (previewRef.current && docxBlob) {
         try {
           // Clear previous content
           previewRef.current.innerHTML = "";
           await renderAsync(docxBlob, previewRef.current, undefined, {
             className: "docx-render",
             inWrapper: false,
+            ignoreWidth: true,
+            ignoreHeight: true,
           });
         } catch (err) {
           if (isMounted) console.error("Docx Preview Error:", err);
@@ -414,11 +415,12 @@ export function EditorWorkspace({
       {/* Header Navigation - Mobile Optimized PWA Style */}
       <header className="h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303] z-50 shrink-0">
         <div className="flex items-center gap-3">
+          <img src="/favicone.png" className="w-5 h-5 md:w-6 md:h-6 object-contain" alt="AI -Doc-Studio Logo" />
           <span
             onClick={onHome}
             className="font-bold text-white tracking-tight text-sm md:text-base cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none"
           >
-            AI Document Studio
+            AI-Doc-Studio
           </span>
         </div>
 
@@ -605,7 +607,7 @@ export function EditorWorkspace({
                     value={liveMarkdown}
                     onChange={(e) => setLiveMarkdown(e.target.value)}
                     spellCheck={false}
-                    className="flex-1 h-full bg-transparent text-zinc-300 font-mono text-[13px] md:text-[14px] leading-relaxed focus:outline-none resize-none custom-scrollbar px-6 py-4 pb-40"
+                    className="flex-1  bg-transparent text-zinc-300 font-mono text-[13px] md:text-[14px] leading-relaxed focus:outline-none resize-none custom-scrollbar px-6 py-4 pb-40"
                     placeholder="Start typing..."
                   />
                 </div>

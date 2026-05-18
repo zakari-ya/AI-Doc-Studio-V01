@@ -7,16 +7,29 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onStart }: LandingPageProps) {
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   return (
     <div className="w-full flex flex-col bg-[#030303] text-zinc-300 font-sans selection:bg-white/10 overflow-x-hidden">
       {/* Navigation */}
       <header className="fixed top-0 left-0 right-0 h-14 md:h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-[#030303]/80 backdrop-blur-xl z-50">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-white tracking-tight text-sm md:text-lg">Studio</span>
+          <img src="/favicone.png" className="w-5 h-5 md:w-6 md:h-6 object-contain" alt="AI-Doc-Studio Logo" />
+          <span className="font-bold text-white tracking-tight text-sm md:text-lg">AI-Doc-Studio</span>
         </div>
         <nav className="hidden md:flex items-center gap-12 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-          <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
-          <a href="#tech" className="hover:text-white transition-colors">Protocol</a>
+          <a href="#features" onClick={(e) => handleScroll(e, "features")} className="hover:text-white transition-colors">Capabilities</a>
+          <a href="#tech" onClick={(e) => handleScroll(e, "tech")} className="hover:text-white transition-colors">Protocol</a>
+          <a href="#faq" onClick={(e) => handleScroll(e, "faq")} className="hover:text-white transition-colors">Knowledge</a>
         </nav>
         <div className="flex mr-2 md:mr-0">
            <button
@@ -194,7 +207,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </section>
 
       {/* Capabilities Section */}
-      <section id="features" className="py-20 md:py-40 px-4 bg-white text-black rounded-[30px] md:rounded-[80px]">
+      <section id="features" className="scroll-mt-20 py-20 md:py-40 px-4 bg-white text-black rounded-[30px] md:rounded-[80px]">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-start">
              <div className="md:w-1/2 space-y-8 md:space-y-12 h-min md:sticky md:top-40">
@@ -246,7 +259,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </section>
 
       {/* Protocol Section */}
-      <section id="tech" className="py-40 px-4 bg-[#030303]">
+      <section id="tech" className="scroll-mt-20 py-40 px-4 bg-[#030303]">
          <div className="max-w-4xl mx-auto text-center space-y-24">
             <div className="space-y-6">
               <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Engine Protocol</span>
@@ -271,7 +284,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-40 px-4 border-t border-white/5 bg-zinc-950">
+      <section id="faq" className="scroll-mt-20 py-40 px-4 border-t border-white/5 bg-zinc-950">
         <div className="max-w-3xl mx-auto space-y-20">
           <div className="text-center space-y-6">
             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Knowledge Base</span>
@@ -325,10 +338,8 @@ export function LandingPage({ onStart }: LandingPageProps) {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
-                  <div className="w-3 h-3 bg-black rounded-sm"></div>
-                </div>
-                <span className="font-bold text-white tracking-tighter uppercase text-sm">RECON STUDIO</span>
+                <img src="/favicone.png" className="w-6 h-6 object-contain" alt="AI -Doc-Studio Logo" />
+                <span className="font-bold text-white tracking-tighter uppercase text-sm">AI -Doc-Studio</span>
               </div>
               <p className="text-xs text-zinc-600 leading-relaxed max-w-xs uppercase tracking-widest font-bold">
                 The global standard for structural document recovery.
@@ -347,9 +358,9 @@ export function LandingPage({ onStart }: LandingPageProps) {
             <div className="flex flex-col gap-6">
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Navigation</span>
               <ul className="text-xs text-zinc-600 space-y-4 font-mono">
-                <li><a href="#features" className="hover:text-white transition-colors">CAPABILITIES</a></li>
-                <li><a href="#tech" className="hover:text-white transition-colors">PROTOCOL</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors">KNOWLEDGE</a></li>
+                <li><a href="#features" onClick={(e) => handleScroll(e, "features")} className="hover:text-white transition-colors">CAPABILITIES</a></li>
+                <li><a href="#tech" onClick={(e) => handleScroll(e, "tech")} className="hover:text-white transition-colors">PROTOCOL</a></li>
+                <li><a href="#faq" onClick={(e) => handleScroll(e, "faq")} className="hover:text-white transition-colors">KNOWLEDGE</a></li>
               </ul>
             </div>
 
@@ -365,7 +376,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
           
           <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-mono text-zinc-700 uppercase tracking-widest">
              <div className="flex gap-12">
-                <span>© 2024 ARCH-RECON INC.</span>
+                <span>© 2026 AI-Doc-Studio</span>
                 <span className="hidden md:inline">VERSION: REL-2.4.0</span>
              </div>
              <div className="flex gap-12">
@@ -375,7 +386,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
           </div>
         </div>
       </footer>
-      {/* PWA Navigation Mockup */}
+      {/* PWA Navigation Mockup
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-950 border-t border-white/5 md:hidden flex items-center justify-center z-50 px-4">
           <div className="flex w-full items-center justify-between text-zinc-600 font-bold text-[7px] uppercase tracking-widest">
              <div className="flex flex-col items-center gap-1.5 text-white">
@@ -395,7 +406,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
                 <span>Settings</span>
              </div>
           </div>
-      </div>
+      </div> */}
     </div>
   );
 }

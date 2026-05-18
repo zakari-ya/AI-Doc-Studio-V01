@@ -13,7 +13,10 @@ export async function reconstructDocument(rawText: string) {
     throw new Error("OpenRouter API key is required. Please set OPENROUTER_API_KEY in your environment.");
   }
 
-  const model = "deepseek/deepseek-v4-flash:free";
+  const models = [
+    "z-ai/glm-4.5-air:free",
+    "openrouter/owl-alpha"
+  ];
   
   const prompt = `
     You are a document reconstruction expert. 
@@ -33,40 +36,48 @@ export async function reconstructDocument(rawText: string) {
     ${rawText}
   `;
 
-  try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "AI Document Reconstruction Studio",
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      })
-    });
+  let lastError: any = null;
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `OpenRouter API error: ${response.statusText}`);
+  for (const model of models) {
+    try {
+      console.log(`Attempting reconstruction with model: ${model}`);
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "AI -Doc-Studio",
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.1,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `OpenRouter API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const rawOutput = data.choices[0].message.content || "";
+
+      // 2. OUTPUT VALIDATION (ZOD)
+      const outputValidation = AIOutputSchema.safeParse({ content: rawOutput });
+      if (!outputValidation.success) {
+        throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
+      }
+
+      // 3. SANITIZATION (DOMPurify)
+      return secureMarkdown(outputValidation.data.content);
+    } catch (error) {
+      console.warn(`Model ${model} failed:`, error);
+      lastError = error;
     }
-
-    const data = await response.json();
-    const rawOutput = data.choices[0].message.content || "";
-
-    // 2. OUTPUT VALIDATION (ZOD)
-    const outputValidation = AIOutputSchema.safeParse({ content: rawOutput });
-    if (!outputValidation.success) {
-      throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
-    }
-
-    // 3. SANITIZATION (DOMPurify)
-    return secureMarkdown(outputValidation.data.content);
-  } catch (error) {
-    console.error("OpenRouter Reconstruction Error:", error);
-    throw error;
   }
+
+  console.error("All reconstruction models failed.");
+  throw lastError || new Error("Failed to reconstruct document with all available models");
 }

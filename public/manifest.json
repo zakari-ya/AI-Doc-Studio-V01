@@ -1,6 +1,6 @@
 {
   "name": "AI Document Reconstruction Studio",
-  "short_name": "DocStudio",
+  "short_name": "AI-Doc-Studio",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030303",
