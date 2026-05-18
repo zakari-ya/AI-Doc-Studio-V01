@@ -141,7 +141,7 @@
 @media (min-width: 768px) {
   .docx-render {
     padding: 35pt !important;
-    width: 595.3pt !important;
+    width: 100% !important;
     min-height: 841.9pt !important;
     margin: 0 auto 24px auto !important;
   }

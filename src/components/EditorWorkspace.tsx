@@ -185,11 +185,6 @@ export function EditorWorkspace({
         flushTable();
       }
 
-      if (!trimmedLine) {
-        children.push(new Paragraph({ text: "" }));
-        continue;
-      }
-
       // Headings
       const hMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
       if (hMatch) {
@@ -229,17 +224,21 @@ export function EditorWorkspace({
           new Paragraph({
             children: parseInlineFormatting(text),
             bullet: { level: 0 },
-            spacing: { before: 100, after: 100 },
+            spacing: { after: 120 },
           }),
         );
         continue;
       }
 
       // Plain Paragraph
+      if (!trimmedLine) {
+        continue;
+      }
+
       children.push(
         new Paragraph({
           children: parseInlineFormatting(trimmedLine),
-          spacing: { before: 150, after: 150 },
+          spacing: { after: 120 },
         }),
       );
     }
@@ -258,7 +257,7 @@ export function EditorWorkspace({
             },
             paragraph: {
               spacing: {
-                line: 360, // 1.5 line spacing
+                line: 276, // 1.15 line spacing
               },
             },
           },
@@ -301,6 +300,8 @@ export function EditorWorkspace({
           await renderAsync(docxBlob, previewRef.current, undefined, {
             className: "docx-render",
             inWrapper: false,
+            ignoreWidth: true,
+            ignoreHeight: true,
           });
         } catch (err) {
           if (isMounted) console.error("Docx Preview Error:", err);
