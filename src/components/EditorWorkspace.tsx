@@ -16,53 +16,13 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import { renderAsync } from "docx-preview";
 import { cn } from "../lib/utils";
 import { ExportSchema } from "../lib/schemas";
 import { secureMarkdown } from "../lib/sanitizer";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-  Table,
-  TableRow,
-  TableCell,
-  BorderStyle,
-  WidthType,
-  AlignmentType,
-  VerticalAlign,
-} from "docx";
-
-// Helper to parse inline formatting like bold
-function parseInlineFormatting(text: string): TextRun[] {
-  const runs: TextRun[] = [];
-  // Match bold: **text** or __text__
-  const boldRegex = /(\*\*|__)(.*?)\1/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = boldRegex.exec(text)) !== null) {
-    // Add text before the match
-    if (match.index > lastIndex) {
-      runs.push(new TextRun({ text: text.slice(lastIndex, match.index) }));
-    }
-    // Add bold text
-    runs.push(new TextRun({ text: match[2], bold: true }));
-    lastIndex = boldRegex.lastIndex;
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    runs.push(new TextRun({ text: text.slice(lastIndex) }));
-  }
-
-  return runs.length > 0 ? runs : [new TextRun({ text })];
-}
 
 interface EditorWorkspaceProps {
   markdown: string;
+  notice?: string | null;
   original: string;
   fileName: string;
   onBack: () => void;
@@ -71,6 +31,7 @@ interface EditorWorkspaceProps {
 
 export function EditorWorkspace({
   markdown,
+  notice,
   original,
   fileName,
   onBack,
@@ -103,12 +64,48 @@ export function EditorWorkspace({
   }, []);
 
   const generateDocx = async (md: string) => {
-    // 1. Sanitize input Markdown to remove dangerous HTML tags before parsing
+    const {
+      AlignmentType,
+      BorderStyle,
+      Document,
+      HeadingLevel,
+      Packer,
+      Paragraph,
+      Table,
+      TableCell,
+      TableRow,
+      TextRun,
+      VerticalAlign,
+      WidthType,
+    } = await import("docx");
+
     const securedMd = secureMarkdown(md);
+
+    const parseInlineFormatting = (text: string) => {
+      const runs: InstanceType<typeof TextRun>[] = [];
+      const boldRegex = /(\*\*|__)(.*?)\1/g;
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+
+      while ((match = boldRegex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          runs.push(new TextRun({ text: text.slice(lastIndex, match.index) }));
+        }
+
+        runs.push(new TextRun({ text: match[2], bold: true }));
+        lastIndex = boldRegex.lastIndex;
+      }
+
+      if (lastIndex < text.length) {
+        runs.push(new TextRun({ text: text.slice(lastIndex) }));
+      }
+
+      return runs.length > 0 ? runs : [new TextRun({ text })];
+    };
 
     const children: any[] = [];
     const lines = securedMd.split("\n");
-    let currentTableRows: TableRow[] = [];
+    let currentTableRows: any[] = [];
     let inTable = false;
 
     const flushTable = () => {
@@ -297,6 +294,7 @@ export function EditorWorkspace({
         try {
           // Clear previous content
           previewRef.current.innerHTML = "";
+          const { renderAsync } = await import("docx-preview");
           await renderAsync(docxBlob, previewRef.current, undefined, {
             className: "docx-render",
             inWrapper: false,
@@ -505,6 +503,12 @@ export function EditorWorkspace({
           </button>
         </div>
       </header>
+
+      {notice && (
+        <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 md:px-8 py-3 text-[11px] md:text-xs text-amber-100 tracking-[0.08em] uppercase">
+          {notice}
+        </div>
+      )}
 
       {/* Main Workspace - Adaptive Split View */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[#030303] relative">

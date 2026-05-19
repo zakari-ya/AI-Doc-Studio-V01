@@ -1,83 +1,66 @@
-import { AIReconstructionSchema, AIOutputSchema } from "./schemas";
+import {
+  AIOutputSchema,
+  AIReconstructionSchema,
+  APIErrorSchema,
+} from "./schemas";
 import { secureMarkdown } from "./sanitizer";
 
+const CLIENT_REQUEST_TIMEOUT_MS = 180_000;
+
 export async function reconstructDocument(rawText: string) {
-  // 1. INPUT VALIDATION (MANDATORY)
   const validation = AIReconstructionSchema.safeParse({ rawText });
   if (!validation.success) {
     throw new Error(`Input Validation Error: ${validation.error.issues[0].message}`);
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new Error("OpenRouter API key is required. Please set OPENROUTER_API_KEY in your environment.");
-  }
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
 
-  const models = [
-    "z-ai/glm-4.5-air:free",
-    "openrouter/owl-alpha"
-  ];
-  
-  const prompt = `
-    You are a document reconstruction expert. 
-    Below is raw text extracted from a PDF. 
-    Your task is to reconstruct the original document structure into clean, professional Markdown.
-    
-    RULES:
-    1. Identify headings and use appropriate # levels.
-    2. Format lists (numbered or bulleted) correctly.
-    3. Reconstruct tables if data looks tabular.
-    4. Fix common OCR/extraction issues (broken words, missing spaces).
-    5. Maintain the logical flow of the document.
-    6. Do NOT include any meta-talk or introductory remarks. Just the Markdown.
-    7. Use standard Markdown syntax.
-    
-    RAW TEXT:
-    ${rawText}
-  `;
+  try {
+    const response = await fetch("/api/reconstruct", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(validation.data),
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
-  let lastError: any = null;
+    const responseBody: unknown = await response.json().catch(() => null);
 
-  for (const model of models) {
-    try {
-      console.log(`Attempting reconstruction with model: ${model}`);
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "AI -Doc-Studio",
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `OpenRouter API error: ${response.statusText}`);
+    if (!response.ok) {
+      const errorValidation = APIErrorSchema.safeParse(responseBody);
+      if (errorValidation.success) {
+        throw new Error(errorValidation.data.error);
       }
 
-      const data = await response.json();
-      const rawOutput = data.choices[0].message.content || "";
-
-      // 2. OUTPUT VALIDATION (ZOD)
-      const outputValidation = AIOutputSchema.safeParse({ content: rawOutput });
-      if (!outputValidation.success) {
-        throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
+      if (response.status === 504) {
+        throw new Error("Reconstruction exceeded the server time limit. The extracted text is still available for editing.");
       }
 
-      // 3. SANITIZATION (DOMPurify)
-      return secureMarkdown(outputValidation.data.content);
-    } catch (error) {
-      console.warn(`Model ${model} failed:`, error);
-      lastError = error;
+      throw new Error("Document reconstruction failed. Please try again.");
     }
-  }
 
-  console.error("All reconstruction models failed.");
-  throw lastError || new Error("Failed to reconstruct document with all available models");
+    const outputValidation = AIOutputSchema.safeParse(responseBody);
+    if (!outputValidation.success) {
+      throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
+    }
+
+    return secureMarkdown(outputValidation.data.content);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(
+        "Reconstruction is taking longer than expected. The extracted text is still available for editing while the AI step is skipped.",
+      );
+    }
+
+    throw error instanceof Error
+      ? error
+      : new Error("Document reconstruction failed. Please try again.");
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }

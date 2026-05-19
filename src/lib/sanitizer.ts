@@ -5,14 +5,13 @@ import DOMPurify from "dompurify";
  * This is the first line of defense against XSS in AI-generated content.
  */
 export function sanitizeHTML(content: string): string {
-  // If we are in a server environment (e.g. durante SSR), dompurify needs a window.
-  // In the current browser-only environment of AI Studio, we can call it directly.
   return DOMPurify.sanitize(content, {
     ALLOWED_TAGS: [
       "b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6",
-      "table", "thead", "tbody", "tr", "th", "td", "blockquote", "code", "pre", "hr", "img"
+      "table", "thead", "tbody", "tr", "th", "td", "blockquote", "code", "pre", "hr"
     ],
-    ALLOWED_ATTR: ["href", "src", "alt", "title", "target", "class"],
+    ALLOWED_ATTR: ["href", "title", "class"],
+    ALLOW_UNKNOWN_PROTOCOLS: false,
   });
 }
 
@@ -21,9 +20,9 @@ export function sanitizeHTML(content: string): string {
  * that DOMPurify might miss if we treat it as plain text.
  */
 export function secureMarkdown(md: string): string {
-  // 1. First Pass: DOMPurify (strips active HTML)
   const sanitized = sanitizeHTML(md);
-  
-  // 2. Second Pass: Additional logic if needed (e.g. neutralizing JS protocols)
-  return sanitized.replace(/javascript\s*:/gi, "disabled:");
+  return sanitized
+    .replace(/javascript\s*:/gi, "disabled:")
+    .replace(/data\s*:/gi, "disabled:")
+    .replace(/vbscript\s*:/gi, "disabled:");
 }

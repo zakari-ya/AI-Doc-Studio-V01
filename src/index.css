@@ -1,12 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
   --color-destructive: #ef4444;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 @layer base {
@@ -20,11 +19,11 @@
 
 @layer components {
   .dashed-grid {
-    background-image: 
+    background-image:
       radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
     background-size: 40px 40px;
   }
-  
+
   .glass {
     @apply bg-white/[0.02] backdrop-blur-3xl border border-white/5;
   }
@@ -48,15 +47,15 @@
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-white/10 rounded-full;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-white/20;
   }
@@ -64,13 +63,12 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  /* Notion-like Prose Overrides */
   .prose {
     --tw-prose-body: #37352f;
     --tw-prose-headings: #37352f;
@@ -118,7 +116,6 @@
     @apply border-l-4 border-zinc-200 pl-4 italic text-zinc-600 my-6;
   }
 
-  /* Table Specific Styling for Dark Mode */
   .prose.prose-invert table {
     @apply border-collapse table-auto w-full border border-white/10 my-6;
   }
@@ -135,7 +132,6 @@
     @apply bg-white/[0.02];
   }
 }
-
 
 .docx-render {
   box-sizing: border-box !important;
@@ -158,7 +154,6 @@
     margin: 0 auto 16px auto !important;
   }
 
-  /* Make sure tables inside the docx preview don't overflow on mobile */
   .docx-render table {
     width: 100% !important;
     max-width: 100% !important;
@@ -166,13 +161,11 @@
     word-break: break-word !important;
   }
 
-  /* Make sure images fit their container */
   .docx-render img {
     max-width: 100% !important;
     height: auto !important;
   }
 
-  /* Force word breaks for long inline elements to avoid horizontal scrolling */
   .docx-render p,
   .docx-render span,
   .docx-render div {
