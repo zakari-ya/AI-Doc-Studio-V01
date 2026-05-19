@@ -16,6 +16,8 @@ export const AIReconstructionSchema = z.object({
       MAX_RAW_TEXT_CHARS,
       `Input text is too large. Reduce the document size and keep extracted text below ${MAX_RAW_TEXT_CHARS.toLocaleString()} characters.`,
     ),
+  segmentIndex: z.number().int().min(0).optional(),
+  segmentCount: z.number().int().min(1).optional(),
 });
 
 /**

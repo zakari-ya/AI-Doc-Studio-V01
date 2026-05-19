@@ -3,16 +3,17 @@ import {
   AIReconstructionSchema,
   APIErrorSchema,
 } from "./schemas";
+import { splitReconstructionText } from "./reconstruction";
 import { secureMarkdown } from "./sanitizer";
 
-const CLIENT_REQUEST_TIMEOUT_MS = 180_000;
+const CLIENT_REQUEST_TIMEOUT_MS = 240_000;
+const CHUNK_RETRY_ATTEMPTS = 2;
 
-export async function reconstructDocument(rawText: string) {
-  const validation = AIReconstructionSchema.safeParse({ rawText });
-  if (!validation.success) {
-    throw new Error(`Input Validation Error: ${validation.error.issues[0].message}`);
-  }
-
+async function requestReconstructionSegment(
+  rawText: string,
+  segmentIndex: number,
+  segmentCount: number,
+) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
 
@@ -23,7 +24,7 @@ export async function reconstructDocument(rawText: string) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(validation.data),
+      body: JSON.stringify({ rawText, segmentIndex, segmentCount }),
       credentials: "same-origin",
       cache: "no-store",
       signal: controller.signal,
@@ -38,7 +39,7 @@ export async function reconstructDocument(rawText: string) {
       }
 
       if (response.status === 504) {
-        throw new Error("Reconstruction exceeded the server time limit. The extracted text is still available for editing.");
+        throw new Error("Reconstruction exceeded the server time limit.");
       }
 
       throw new Error("Document reconstruction failed. Please try again.");
@@ -49,12 +50,10 @@ export async function reconstructDocument(rawText: string) {
       throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
     }
 
-    return secureMarkdown(outputValidation.data.content);
+    return outputValidation.data.content;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error(
-        "Reconstruction is taking longer than expected. The extracted text is still available for editing while the AI step is skipped.",
-      );
+      throw new Error("Reconstruction request timed out before the model responded.");
     }
 
     throw error instanceof Error
@@ -63,4 +62,49 @@ export async function reconstructDocument(rawText: string) {
   } finally {
     window.clearTimeout(timeoutId);
   }
+}
+
+export async function reconstructDocument(rawText: string) {
+  const validation = AIReconstructionSchema.safeParse({ rawText });
+  if (!validation.success) {
+    throw new Error(`Input Validation Error: ${validation.error.issues[0].message}`);
+  }
+
+  const segments = splitReconstructionText(validation.data.rawText);
+  const reconstructedSegments: string[] = [];
+
+  for (const [segmentIndex, segmentText] of segments.entries()) {
+    let segmentContent: string | null = null;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < CHUNK_RETRY_ATTEMPTS; attempt += 1) {
+      try {
+        segmentContent = await requestReconstructionSegment(
+          segmentText,
+          segmentIndex,
+          segments.length,
+        );
+        break;
+      } catch (error) {
+        lastError =
+          error instanceof Error
+            ? error
+            : new Error("Document reconstruction failed. Please try again.");
+      }
+    }
+
+    if (!segmentContent) {
+      if (segments.length > 1) {
+        throw new Error(
+          `Reconstruction stopped on segment ${segmentIndex + 1} of ${segments.length}. ${lastError?.message ?? "The model did not return content."}`,
+        );
+      }
+
+      throw lastError ?? new Error("Document reconstruction failed. Please try again.");
+    }
+
+    reconstructedSegments.push(segmentContent.trim());
+  }
+
+  return secureMarkdown(reconstructedSegments.filter(Boolean).join("\n\n").trim());
 }

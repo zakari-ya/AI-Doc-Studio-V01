@@ -32,8 +32,8 @@ type UpstashResult<T> = {
   error?: string;
 };
 
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_MS = 300_000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
 const MAX_BODY_BYTES = 300_000;
 const PROVIDER_TIMEOUT_MS = 150_000;
 const KV_RATE_LIMIT_PREFIX = "ratelimit:reconstruct";
@@ -249,7 +249,7 @@ function enforceInMemoryRateLimit(ip: string): RateLimitResult {
   if (currentEntry.count > RATE_LIMIT_MAX_REQUESTS) {
     throw new HttpError(
       429,
-      "Rate limit exceeded. Please wait one minute before trying again.",
+      "Rate limit exceeded. Please wait a few minutes before trying again.",
       buildRateLimitHeaders({
         limit: RATE_LIMIT_MAX_REQUESTS,
         remaining: 0,
@@ -311,13 +311,13 @@ async function enforceDistributedRateLimit(
   }
 
   const ttl = await callKv<number>(`/ttl/${key}`, requestId);
-  const ttlSeconds = typeof ttl?.result === "number" && ttl.result > 0 ? ttl.result : 60;
+  const ttlSeconds = typeof ttl?.result === "number" && ttl.result > 0 ? ttl.result : Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
   const resetAt = Date.now() + ttlSeconds * 1000;
 
   if (increment.result > RATE_LIMIT_MAX_REQUESTS) {
     throw new HttpError(
       429,
-      "Rate limit exceeded. Please wait one minute before trying again.",
+      "Rate limit exceeded. Please wait a few minutes before trying again.",
       buildRateLimitHeaders({
         limit: RATE_LIMIT_MAX_REQUESTS,
         remaining: 0,
@@ -406,13 +406,18 @@ async function callOpenRouter(
   rawText: string,
   req: VercelRequest,
   requestId: string,
+  validationSegmentIndex?: number,
+  validationSegmentCount?: number,
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new HttpError(500, "Server configuration error.");
   }
 
-  const prompt = buildReconstructionPrompt(rawText);
+  const prompt = buildReconstructionPrompt(rawText, {
+    segmentIndex: validationSegmentIndex,
+    segmentCount: validationSegmentCount,
+  });
   const providerReferer = getProviderReferer(req);
   let lastError: HttpError | null = null;
 
@@ -524,7 +529,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new HttpError(413, "Input text exceeds the maximum supported length.");
     }
 
-    const content = await callOpenRouter(validation.data.rawText, req, requestId);
+    const content = await callOpenRouter(
+      validation.data.rawText,
+      req,
+      requestId,
+      validation.data.segmentIndex,
+      validation.data.segmentCount,
+    );
     return sendJson(res, 200, { content });
   } catch (error) {
     const httpError =
