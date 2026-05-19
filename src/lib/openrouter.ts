@@ -30,19 +30,41 @@ async function requestReconstructionSegment(
       signal: controller.signal,
     });
 
-    const responseBody: unknown = await response.json().catch(() => null);
+    const requestId = response.headers.get("x-request-id");
+    const responseText = await response.text().catch(() => "");
+    const responseBody: unknown = responseText
+      ? (() => {
+          try {
+            return JSON.parse(responseText) as unknown;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
 
     if (!response.ok) {
       const errorValidation = APIErrorSchema.safeParse(responseBody);
       if (errorValidation.success) {
-        throw new Error(errorValidation.data.error);
+        throw new Error(
+          requestId
+            ? `${errorValidation.data.error} (request id: ${requestId})`
+            : errorValidation.data.error,
+        );
       }
 
       if (response.status === 504) {
-        throw new Error("Reconstruction exceeded the server time limit.");
+        throw new Error(
+          requestId
+            ? `Reconstruction exceeded the server time limit. Request id: ${requestId}`
+            : "Reconstruction exceeded the server time limit.",
+        );
       }
 
-      throw new Error("Document reconstruction failed. Please try again.");
+      throw new Error(
+        requestId
+          ? `Document reconstruction failed with HTTP ${response.status}. Request id: ${requestId}`
+          : `Document reconstruction failed with HTTP ${response.status}.`,
+      );
     }
 
     const outputValidation = AIOutputSchema.safeParse(responseBody);

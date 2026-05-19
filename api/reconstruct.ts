@@ -1,14 +1,72 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import {
-  AIOutputSchema,
-  AIReconstructionSchema,
-  MAX_RAW_TEXT_CHARS,
-} from "../src/lib/schemas";
-import {
-  buildReconstructionPrompt,
-  RECONSTRUCTION_MODELS,
-} from "../src/lib/reconstruction";
+import { z } from "zod";
+
+const MAX_RAW_TEXT_CHARS = 200_000;
+const MAX_OUTPUT_CHARS = 250_000;
+
+const AIReconstructionSchema = z.object({
+  rawText: z
+    .string()
+    .min(1, "Input text cannot be empty")
+    .max(MAX_RAW_TEXT_CHARS, "Input text is too large."),
+  segmentIndex: z.number().int().min(0).optional(),
+  segmentCount: z.number().int().min(1).optional(),
+});
+
+const AIOutputSchema = z.object({
+  content: z
+    .string()
+    .min(1, "AI output is empty")
+    .max(MAX_OUTPUT_CHARS, "AI output is excessively large."),
+});
+
+const RECONSTRUCTION_MODELS = [
+  "z-ai/glm-4.5-air:free",
+  "openrouter/owl-alpha",
+] as const;
+
+type ReconstructionPromptOptions = {
+  segmentCount?: number;
+  segmentIndex?: number;
+};
+
+function buildReconstructionPrompt(
+  rawText: string,
+  options: ReconstructionPromptOptions = {},
+): string {
+  const hasSegmentation =
+    typeof options.segmentCount === "number" && options.segmentCount > 1;
+  const segmentInstructions = hasSegmentation
+    ? `
+SEGMENT CONTEXT:
+- This is segment ${Number(options.segmentIndex ?? 0) + 1} of ${options.segmentCount}.
+- Reconstruct only this segment into markdown.
+- Preserve headings, lists, and tables exactly as they appear in this segment.
+- Do not mention missing previous or next segments.
+- Do not invent a new global title unless this segment clearly contains one.
+`
+    : "";
+
+  return `
+You are a document reconstruction expert.
+Below is raw text extracted from a PDF.
+Your task is to reconstruct the original document structure into clean, professional Markdown.
+${segmentInstructions}
+RULES:
+1. Identify headings and use appropriate # levels.
+2. Format lists (numbered or bulleted) correctly.
+3. Reconstruct tables if data looks tabular.
+4. Fix common OCR/extraction issues (broken words, missing spaces).
+5. Maintain the logical flow of the document.
+6. Do NOT include any meta-talk or introductory remarks. Just the Markdown.
+7. Use standard Markdown syntax only.
+8. Do NOT emit raw HTML blocks.
+
+RAW TEXT:
+${rawText}
+  `.trim();
+}
 
 type VercelRequest = IncomingMessage & {
   body?: unknown;
@@ -411,7 +469,7 @@ async function callOpenRouter(
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    throw new HttpError(500, "Server configuration error.");
+    throw new HttpError(500, "OPENROUTER_API_KEY is missing in Vercel Environment Variables.");
   }
 
   const prompt = buildReconstructionPrompt(rawText, {
@@ -443,8 +501,14 @@ async function callOpenRouter(
       });
 
       if (!response.ok) {
+        const providerErrorBody = await response.text().catch(() => "");
+        const providerMessage = providerErrorBody.slice(0, 500);
+
         if (response.status === 401 || response.status === 403) {
-          throw new HttpError(500, "Server configuration error.");
+          throw new HttpError(
+            500,
+            "OpenRouter rejected the server API key. Check OPENROUTER_API_KEY in Vercel Environment Variables.",
+          );
         }
 
         if (response.status === 429) {
@@ -456,7 +520,7 @@ async function callOpenRouter(
 
         throw new HttpError(
           502,
-          "Reconstruction provider returned an invalid response. Please try again.",
+          `OpenRouter returned HTTP ${response.status}. ${providerMessage || "No provider error body."}`,
         );
       }
 
