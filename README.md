@@ -120,7 +120,7 @@ The Vite dev server bridges `/api/uploads/create`, `/api/documents/reconstruct`,
 4. Ensure `APP_BASE_URL` and `ALLOWED_ORIGINS` match the deployed origin.
 5. Deploy.
 
-`vercel.json` configures function timeouts, hardened headers, CSP allowlists for Clerk/Supabase/Vercel Live, and an hourly cleanup cron.
+`vercel.json` configures function timeouts, hardened headers, CSP allowlists for Clerk/Supabase/Vercel Live, and a daily cleanup cron that stays compatible with the Vercel Hobby plan.
 
 ## Project Structure
 
