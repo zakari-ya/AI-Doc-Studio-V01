@@ -1,132 +1,145 @@
-import {
-  AIOutputSchema,
-  AIReconstructionSchema,
-  APIErrorSchema,
-} from "./schemas";
-import { splitReconstructionText } from "./reconstruction";
+import { z } from "zod";
 import { secureMarkdown } from "./sanitizer";
+import { APIErrorSchema, AIOutputSchema } from "./schemas";
+import { getSupabaseBrowserClient } from "./supabase";
 
 const CLIENT_REQUEST_TIMEOUT_MS = 240_000;
-const CHUNK_RETRY_ATTEMPTS = 2;
 
-async function requestReconstructionSegment(
-  rawText: string,
-  segmentIndex: number,
-  segmentCount: number,
+const SignedUploadSchema = z.object({
+  path: z.string().min(1),
+  token: z.string().min(1),
+  signedUrl: z.string().min(1).optional(),
+});
+
+const CreateUploadResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  storagePath: z.string().min(1),
+  signedUpload: SignedUploadSchema,
+  expiresAt: z.string().min(1),
+});
+
+const ReconstructResponseSchema = AIOutputSchema.extend({
+  documentId: z.string().uuid(),
+  originalText: z.string().min(1),
+});
+
+type ClerkTokenGetter = () => Promise<string | null>;
+
+async function readJsonResponse(response: Response) {
+  const responseText = await response.text().catch(() => "");
+  if (!responseText) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(responseText) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function buildApiError(response: Response, body: unknown) {
+  const requestId = response.headers.get("x-request-id");
+  const parsed = APIErrorSchema.safeParse(body);
+  const message = parsed.success
+    ? parsed.data.error
+    : `Request failed with HTTP ${response.status}.`;
+
+  return new Error(requestId ? `${message} (request id: ${requestId})` : message);
+}
+
+async function fetchJsonWithAuth(
+  path: string,
+  token: string,
+  body: Record<string, unknown>,
 ) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch("/api/reconstruct", {
+    const response = await fetch(path, {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ rawText, segmentIndex, segmentCount }),
+      body: JSON.stringify(body),
       credentials: "same-origin",
       cache: "no-store",
       signal: controller.signal,
     });
 
-    const requestId = response.headers.get("x-request-id");
-    const responseText = await response.text().catch(() => "");
-    const responseBody: unknown = responseText
-      ? (() => {
-          try {
-            return JSON.parse(responseText) as unknown;
-          } catch {
-            return null;
-          }
-        })()
-      : null;
-
+    const responseBody = await readJsonResponse(response);
     if (!response.ok) {
-      const errorValidation = APIErrorSchema.safeParse(responseBody);
-      if (errorValidation.success) {
-        throw new Error(
-          requestId
-            ? `${errorValidation.data.error} (request id: ${requestId})`
-            : errorValidation.data.error,
-        );
-      }
-
-      if (response.status === 504) {
-        throw new Error(
-          requestId
-            ? `Reconstruction exceeded the server time limit. Request id: ${requestId}`
-            : "Reconstruction exceeded the server time limit.",
-        );
-      }
-
-      throw new Error(
-        requestId
-          ? `Document reconstruction failed with HTTP ${response.status}. Request id: ${requestId}`
-          : `Document reconstruction failed with HTTP ${response.status}.`,
-      );
+      throw buildApiError(response, responseBody);
     }
 
-    const outputValidation = AIOutputSchema.safeParse(responseBody);
-    if (!outputValidation.success) {
-      throw new Error(`Output Security Error: ${outputValidation.error.issues[0].message}`);
-    }
-
-    return outputValidation.data.content;
+    return responseBody;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Reconstruction request timed out before the model responded.");
+      throw new Error("The document request timed out before the server responded.");
     }
 
-    throw error instanceof Error
-      ? error
-      : new Error("Document reconstruction failed. Please try again.");
+    throw error instanceof Error ? error : new Error("Document request failed.");
   } finally {
     window.clearTimeout(timeoutId);
   }
 }
 
-export async function reconstructDocument(rawText: string) {
-  const validation = AIReconstructionSchema.safeParse({ rawText });
-  if (!validation.success) {
-    throw new Error(`Input Validation Error: ${validation.error.issues[0].message}`);
+async function getRequiredClerkToken(getToken: ClerkTokenGetter) {
+  const token = await getToken();
+  if (!token) {
+    throw new Error("Authentication expired. Sign in again before uploading.");
   }
 
-  const segments = splitReconstructionText(validation.data.rawText);
-  const reconstructedSegments: string[] = [];
+  return token;
+}
 
-  for (const [segmentIndex, segmentText] of segments.entries()) {
-    let segmentContent: string | null = null;
-    let lastError: Error | null = null;
+export async function processDocumentWithStorage(
+  file: File,
+  getToken: ClerkTokenGetter,
+) {
+  const token = await getRequiredClerkToken(getToken);
+  const uploadResponse = await fetchJsonWithAuth("/api/uploads/create", token, {
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type || "application/pdf",
+  });
 
-    for (let attempt = 0; attempt < CHUNK_RETRY_ATTEMPTS; attempt += 1) {
-      try {
-        segmentContent = await requestReconstructionSegment(
-          segmentText,
-          segmentIndex,
-          segments.length,
-        );
-        break;
-      } catch (error) {
-        lastError =
-          error instanceof Error
-            ? error
-            : new Error("Document reconstruction failed. Please try again.");
-      }
-    }
-
-    if (!segmentContent) {
-      if (segments.length > 1) {
-        throw new Error(
-          `Reconstruction stopped on segment ${segmentIndex + 1} of ${segments.length}. ${lastError?.message ?? "The model did not return content."}`,
-        );
-      }
-
-      throw lastError ?? new Error("Document reconstruction failed. Please try again.");
-    }
-
-    reconstructedSegments.push(segmentContent.trim());
+  const uploadValidation = CreateUploadResponseSchema.safeParse(uploadResponse);
+  if (!uploadValidation.success) {
+    throw new Error("Upload Security Error: invalid signed upload response.");
   }
 
-  return secureMarkdown(reconstructedSegments.filter(Boolean).join("\n\n").trim());
+  const supabase = getSupabaseBrowserClient();
+  const { signedUpload } = uploadValidation.data;
+  const { error: uploadError } = await supabase.storage
+    .from(import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || "documents-temp")
+    .uploadToSignedUrl(signedUpload.path, signedUpload.token, file, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Upload failed: ${uploadError.message}`);
+  }
+
+  const reconstructResponse = await fetchJsonWithAuth(
+    "/api/documents/reconstruct",
+    token,
+    { documentId: uploadValidation.data.documentId },
+  );
+
+  const reconstructValidation =
+    ReconstructResponseSchema.safeParse(reconstructResponse);
+  if (!reconstructValidation.success) {
+    throw new Error("Output Security Error: invalid reconstruction response.");
+  }
+
+  return {
+    documentId: reconstructValidation.data.documentId,
+    markdown: secureMarkdown(reconstructValidation.data.content),
+    originalText: reconstructValidation.data.originalText,
+  };
 }

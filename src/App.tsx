@@ -4,15 +4,15 @@
  */
 
 import { Suspense, lazy, useState } from "react";
+import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "motion/react";
 import { UploadSection } from "./components/UploadSection";
 import { ProcessingState } from "./components/ProcessingState";
 import { LandingPage } from "./components/LandingPage";
-import { extractTextFromPDF } from "./lib/pdf";
-import { reconstructDocument } from "./lib/openrouter";
+import { processDocumentWithStorage } from "./lib/openrouter";
 
 type AppState = "LANDING" | "UPLOAD" | "PROCESSING" | "SUCCESS" | "ERROR";
-type ProcessingPhase = "extracting" | "reconstructing" | "finalizing";
+type ProcessingPhase = "uploading" | "extracting" | "reconstructing" | "finalizing";
 
 const EditorWorkspace = lazy(() =>
   import("./components/EditorWorkspace").then((module) => ({
@@ -21,8 +21,9 @@ const EditorWorkspace = lazy(() =>
 );
 
 export default function App() {
+  const { getToken } = useAuth();
   const [state, setState] = useState<AppState>("LANDING");
-  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>("extracting");
+  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>("uploading");
   const [markdown, setMarkdown] = useState("");
   const [originalText, setOriginalText] = useState("");
   const [fileName, setFileName] = useState("");
@@ -30,50 +31,47 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const handleProcess = async (file: File) => {
-    let extractedText = "";
-
     setFileName(file.name);
     setState("PROCESSING");
-    setProcessingPhase("extracting");
+    setProcessingPhase("uploading");
     setError(null);
     setNotice(null);
     setMarkdown("");
     setOriginalText("");
 
+    let phaseTimer: number | undefined;
+    let reconstructTimer: number | undefined;
+
     try {
-      extractedText = await extractTextFromPDF(file);
-      setOriginalText(extractedText);
-
-      setProcessingPhase("reconstructing");
-      const reconstructed = await reconstructDocument(extractedText);
-      setMarkdown(reconstructed);
+      phaseTimer = window.setTimeout(() => setProcessingPhase("extracting"), 900);
+      reconstructTimer = window.setTimeout(
+        () => setProcessingPhase("reconstructing"),
+        2600,
+      );
+      const result = await processDocumentWithStorage(file, getToken);
+      setOriginalText(result.originalText);
+      setMarkdown(result.markdown);
       setNotice(null);
-
       setProcessingPhase("finalizing");
       setState("SUCCESS");
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "An unexpected error occurred";
-
-      if (extractedText.trim().length > 0) {
-        setOriginalText(extractedText);
-        setMarkdown(extractedText);
-        setNotice(
-          `AI reconstruction did not complete. Showing extracted text instead. ${message}`,
-        );
-        setProcessingPhase("finalizing");
-        setState("SUCCESS");
-        return;
-      }
-
       setError(message);
       setState("ERROR");
+    } finally {
+      if (phaseTimer) {
+        window.clearTimeout(phaseTimer);
+      }
+      if (reconstructTimer) {
+        window.clearTimeout(reconstructTimer);
+      }
     }
   };
 
   const handleReset = () => {
     setState("UPLOAD");
-    setProcessingPhase("extracting");
+    setProcessingPhase("uploading");
     setMarkdown("");
     setOriginalText("");
     setFileName("");
@@ -83,7 +81,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-foreground selection:bg-white/10 dashed-grid">
-      <AnimatePresence mode="wait">
+      <SignedOut>
+        <div className="flex min-h-screen items-center justify-center p-6">
+          <div className="max-w-md rounded-[2rem] border border-white/10 bg-black/60 p-8 text-center shadow-[0_0_80px_rgba(255,255,255,0.06)] backdrop-blur-2xl">
+            <img src="/favicone.png" className="mx-auto mb-6 h-10 w-10 object-contain" alt="AI-Doc-Studio Logo" />
+            <h1 className="mb-4 font-serif text-3xl italic tracking-tight text-white">
+              Secure entry required
+            </h1>
+            <p className="mb-8 text-sm leading-6 text-zinc-500">
+              Sign in to upload private PDFs, run reconstruction, and keep every document tied to your account.
+            </p>
+            <SignInButton mode="modal">
+              <button className="w-full rounded-full bg-white px-8 py-4 text-[10px] font-bold uppercase tracking-[0.35em] text-black transition hover:bg-zinc-200">
+                Sign In
+              </button>
+            </SignInButton>
+          </div>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+        <div className="fixed right-4 top-4 z-[60] rounded-full border border-white/10 bg-black/70 p-2 backdrop-blur-xl">
+          <UserButton afterSignOutUrl="/" />
+        </div>
+        <AnimatePresence mode="wait">
         {state === "LANDING" && (
           <LandingPage key="landing" onStart={() => setState("UPLOAD")} />
         )}
@@ -172,7 +193,8 @@ export default function App() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </SignedIn>
     </div>
   );
 }

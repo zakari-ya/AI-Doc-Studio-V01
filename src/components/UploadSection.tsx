@@ -13,14 +13,21 @@ interface UploadSectionProps {
   onUpload: (file: File) => void;
 }
 
+interface SelectedFileMeta {
+  name: string;
+  size: number;
+  type: string;
+}
+
 const MAX_FILE_SIZE_MB = Math.round(MAX_PDF_FILE_SIZE_BYTES / (1024 * 1024));
 
 export function UploadSection({ onUpload }: UploadSectionProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedFileMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFileRef = useRef<File | null>(null);
 
   const handleDragOver = (event: DragEvent) => {
     event.preventDefault();
@@ -43,6 +50,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
       });
 
       if (!validation.success) {
+        selectedFileRef.current = null;
         setSelectedFile(null);
         setError(validation.error.issues[0].message);
         return;
@@ -53,6 +61,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
       const type = await fileTypeFromBuffer(uint8Array);
 
       if (!type || type.mime !== "application/pdf") {
+        selectedFileRef.current = null;
         setSelectedFile(null);
         setError(
           "Security violation: file signature does not match a valid PDF. Upload an unmodified PDF file.",
@@ -60,9 +69,15 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
         return;
       }
 
-      setSelectedFile(file);
+      selectedFileRef.current = file;
+      setSelectedFile({
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/pdf",
+      });
     } catch (analysisError) {
       console.error("Analysis Error:", analysisError);
+      selectedFileRef.current = null;
       setSelectedFile(null);
       setError("File verification failed. Try another PDF or re-export the file before uploading.");
     } finally {
@@ -87,6 +102,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
   };
 
   const clearFile = () => {
+    selectedFileRef.current = null;
     setSelectedFile(null);
     setError(null);
     if (fileInputRef.current) {
@@ -175,7 +191,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
           </div>
 
           <div className="flex gap-2 flex-wrap justify-center px-4">
-            {["PDF_ONLY", "LOCAL_PARSE", "SERVER_GUARDED"].map((tag) => (
+            {["PDF_ONLY", "PRIVATE_STORAGE", "SERVER_EXTRACT"].map((tag) => (
               <div
                 key={tag}
                 className="px-3 py-1 border border-white/5 rounded-md text-[8px] font-mono text-zinc-500 bg-white/5 uppercase tracking-widest"
@@ -202,7 +218,7 @@ export function UploadSection({ onUpload }: UploadSectionProps) {
       <div className="flex flex-col items-center gap-6 md:gap-8">
         <button
           disabled={!selectedFile || isAnalyzing}
-          onClick={() => selectedFile && onUpload(selectedFile)}
+          onClick={() => selectedFileRef.current && onUpload(selectedFileRef.current)}
           className={cn(
             "group relative w-full sm:w-auto px-10 md:px-20 py-5 md:py-6 rounded-full font-bold text-[10px] md:text-xs transition-all duration-500 flex items-center justify-center gap-4 overflow-hidden uppercase tracking-[0.4em]",
             selectedFile && !isAnalyzing

@@ -17,9 +17,13 @@
     "security:audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.11",
+    "@clerk/clerk-react": "^5.61.6",
+    "@supabase/supabase-js": "^2.106.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.14",
     "@types/dompurify": "^3.0.5",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.4",
@@ -31,6 +35,8 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "pdfjs-dist": "^5.7.284",
+    "pg": "^8.21.0",
+    "rate-limiter-flexible": "^11.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",

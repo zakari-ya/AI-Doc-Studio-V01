@@ -3,7 +3,9 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig, loadEnv, type Plugin } from "vite";
-import reconstructHandler from "./api/reconstruct";
+import reconstructHandler from "./api/documents/reconstruct";
+import cleanupHandler from "./api/maintenance/cleanup";
+import createUploadHandler from "./api/uploads/create";
 
 type DevRequest = IncomingMessage & {
   originalUrl?: string;
@@ -15,14 +17,22 @@ type DevResponse = ServerResponse & {
 };
 
 function createDevApiPlugin(): Plugin {
+  const handlers = new Map([
+    ["/api/uploads/create", createUploadHandler],
+    ["/api/documents/reconstruct", reconstructHandler],
+    ["/api/maintenance/cleanup", cleanupHandler],
+  ]);
+
   return {
-    name: "local-reconstruct-api",
+    name: "local-secure-api",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const request = req as DevRequest;
         const requestUrl = request.originalUrl ?? request.url ?? "";
+        const pathname = requestUrl.split("?")[0] ?? "";
+        const handler = handlers.get(pathname);
 
-        if (!requestUrl.startsWith("/api/reconstruct")) {
+        if (!handler) {
           next();
           return;
         }
@@ -40,7 +50,7 @@ function createDevApiPlugin(): Plugin {
         };
 
         try {
-          await reconstructHandler(request as Parameters<typeof reconstructHandler>[0], response as Parameters<typeof reconstructHandler>[1]);
+          await handler(request as Parameters<typeof handler>[0], response as Parameters<typeof handler>[1]);
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unexpected dev server error.";
           if (!response.writableEnded) {
@@ -57,6 +67,10 @@ export default defineConfig(({ mode }) => {
 
   if (env.OPENROUTER_API_KEY && !process.env.OPENROUTER_API_KEY) {
     process.env.OPENROUTER_API_KEY = env.OPENROUTER_API_KEY;
+  }
+
+  for (const [key, value] of Object.entries(env)) {
+    process.env[key] ??= value;
   }
 
   return {

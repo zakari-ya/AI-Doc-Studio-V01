@@ -1,258 +1,194 @@
 # AI Doc Studio
 
-Security-first PDF to Markdown reconstruction studio built with React, Vite, and Vercel Functions. The app extracts text from digital PDF files in the browser, sends only validated text to a guarded serverless endpoint, reconstructs the document with OpenRouter, sanitizes the result, and lets the user review or export Markdown, TXT, or DOCX.
+Security-first PDF-to-Markdown reconstruction studio built for Vercel. Users sign in with Clerk, upload PDFs directly to a private Supabase Storage bucket, and a protected Vercel Function extracts text transiently before reconstructing clean Markdown through OpenRouter.
 
 ## Status
 
-Production-oriented and Vercel-ready after environment configuration.
+Production-ready after Clerk, Supabase, OpenRouter, and Vercel environment variables are configured. The app no longer uses React state as the PDF lifecycle or sends raw files to `/api/reconstruct`; the browser uses a short-lived Supabase signed upload token and the server owns extraction, rate limiting, and reconstruction.
 
-## Highlights
+## Features
 
-- Browser-side PDF text extraction with `pdf.js`
-- Server-side LLM reconstruction through `/api/reconstruct`
-- Strict input validation with `zod`
-- Sanitized Markdown output with `DOMPurify` and `rehype-sanitize`
-- Same-origin API design with origin allowlisting
-- Optional durable rate limiting through Vercel KV REST variables
-- Hardened security headers through `vercel.json`
-- Local DOCX generation and preview without exposing provider secrets
+- Invite-only authentication with `Clerk`.
+- Private temporary PDF storage in `Supabase Storage`.
+- Server-side PDF extraction with `pdf.js` inside Vercel Functions.
+- OpenRouter reconstruction with chunking, retries, timeout guards, and output validation.
+- Per-user daily reconstruction quota with `rate-limiter-flexible` and Supabase Postgres.
+- Markdown sanitization with `DOMPurify`, `react-markdown`, and `rehype-sanitize`.
+- Export to Markdown, TXT, and DOCX.
+- Vercel Cron cleanup for expired files and stored reconstruction content.
 
 ## Security First
 
-This project is intentionally biased toward safe defaults.
-
-- The OpenRouter API key never reaches the browser bundle.
-- The frontend only calls the local `/api/reconstruct` endpoint.
-- The API accepts `POST` requests only and requires JSON payloads.
-- Request size, extracted text size, file size, and page count are all capped.
-- Suspicious files are rejected using both MIME checks and binary signature checks.
-- AI output is validated, sanitized, and rendered through a restricted Markdown pipeline.
-- Same-origin requests are enforced through `Origin` and `Referer` checks.
-- Security headers include CSP, HSTS, COOP, CORP, `nosniff`, and `no-referrer`.
-- Legacy service-worker caching is actively removed to avoid stale deploys.
-
-## What This Project Does
-
-1. Accepts a local PDF file from the browser.
-2. Verifies the file type and size before processing.
-3. Extracts text locally with `pdf.js`.
-4. Sends validated text to a Vercel serverless function.
-5. Calls OpenRouter from the server only.
-6. Validates and sanitizes the response.
-7. Lets the user edit, preview, copy, and export the final document.
-
-## What This Project Does Not Do
-
-- It does not expose the model provider key to the client.
-- It does not OCR scanned image PDFs.
-- It does not store uploaded files or reconstructed content on the server.
-- It does not support arbitrary HTML rendering from model output.
+- `CLERK_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DATABASE_URL`, and `OPENROUTER_API_KEY` are server-only.
+- API routes require `Authorization: Bearer <Clerk session token>`.
+- Document rows are scoped by `clerk_user_id`; another user cannot reconstruct someone else’s document.
+- The Supabase bucket is private and uploads use signed upload tokens.
+- PDF type, signature, size, and page count are validated before OpenRouter is called.
+- Rate limiting is per Clerk user id: `20` reconstructions per day.
+- Production rate-limiter storage fails closed with `503` if Supabase Postgres is unavailable.
+- CSP, HSTS, `nosniff`, `no-referrer`, COOP, CORP, and restrictive permissions are configured in `vercel.json`.
+- Uploaded PDFs expire after `24 hours`; cleanup marks rows expired and removes storage objects.
 
 ## Tech Stack
 
-### Frontend
+| Layer | Choice |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS 4 |
+| Auth | Clerk |
+| Database | Supabase Postgres |
+| File Storage | Private Supabase Storage bucket |
+| Rate Limiting | `rate-limiter-flexible` + `pg` |
+| PDF Extraction | `pdfjs-dist` |
+| Validation | `zod`, `file-type` |
+| Markdown Safety | `DOMPurify`, `react-markdown`, `rehype-sanitize` |
+| Export | `docx`, `docx-preview` |
+| Deployment | Vercel Functions + Vercel Cron |
 
-- React 19
-- TypeScript
-- Vite 6
-- Tailwind CSS 4
-- Motion
-- Lucide React
+## Data Flow
 
-### Document Processing
+1. Signed-out users see Clerk sign-in and cannot access app actions.
+2. Signed-in user selects a PDF.
+3. Browser validates basic metadata and first-byte signature.
+4. Browser calls `POST /api/uploads/create` with a Clerk bearer token.
+5. Server creates a `documents` row and returns a Supabase signed upload token.
+6. Browser uploads the PDF directly to private Supabase Storage.
+7. Browser calls `POST /api/documents/reconstruct` with `{ documentId }`.
+8. Server verifies ownership, applies rate limiting, downloads the private PDF, extracts text, reconstructs Markdown, stores results, and returns content.
+9. `POST /api/maintenance/cleanup` removes expired files and marks rows as `expired`.
 
-- `pdf.js` for browser-side PDF text extraction
-- `file-type` for binary signature validation
-- `docx` for export generation
-- `docx-preview` for local preview rendering
+## API Routes
 
-### Content Safety
-
-- `zod` for runtime validation
-- `DOMPurify` for output sanitization
-- `react-markdown` + `remark-gfm` + `rehype-sanitize` for safe rendering
-
-### Backend and Deployment
-
-- Vercel Functions
-- Browser `fetch` API for the frontend request path
-- Server-side `fetch` to OpenRouter
-- Optional Vercel KV REST integration for durable rate limiting
-
-## External Services and Fetchers
-
-The application uses only two network paths in production:
-
-- Browser to app backend: `POST /api/reconstruct`
-- App backend to model provider: `POST https://openrouter.ai/api/v1/chat/completions`
-
-Optional infrastructure:
-
-- Vercel KV REST API when `KV_REST_API_URL` and `KV_REST_API_TOKEN` are configured for durable rate limiting
-
-No CDN fonts, no client-side model calls, and no third-party analytics are required by the app.
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `POST /api/uploads/create` | Clerk bearer token | Create document row and signed Supabase upload token |
+| `POST /api/documents/reconstruct` | Clerk bearer token | Extract PDF text, reconstruct Markdown, persist result |
+| `POST /api/maintenance/cleanup` | `CRON_SECRET` bearer token | Delete expired storage objects and expire rows |
+| `POST /api/reconstruct` | Disabled | Legacy endpoint returns `410` |
 
 ## Environment Variables
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `OPENROUTER_API_KEY` | Yes | Secret API key used only by the serverless function |
-| `APP_BASE_URL` | Yes in production | Canonical app URL used for origin checks and provider attribution |
-| `ALLOWED_ORIGINS` | Recommended | Comma-separated explicit origin allowlist |
-| `OPENROUTER_HTTP_REFERER` | Recommended | Sent to OpenRouter as request attribution |
-| `KV_REST_API_URL` | Optional | Enables durable rate limiting via Vercel KV / Upstash REST |
-| `KV_REST_API_TOKEN` | Optional | Auth token for the KV REST endpoint |
-
 Start from [.env.example](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/.env.example:1).
+
+| Variable | Required | Scope | Purpose |
+| --- | --- | --- | --- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Browser | Clerk React SDK |
+| `CLERK_SECRET_KEY` | Yes | Server | Verify Clerk session tokens |
+| `VITE_SUPABASE_URL` | Yes | Browser | Supabase project URL for signed storage upload |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Browser | Public Supabase anon key |
+| `VITE_SUPABASE_STORAGE_BUCKET` | Recommended | Browser | Storage bucket name, defaults to `documents-temp` |
+| `SUPABASE_URL` | Yes | Server | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server | Private database/storage admin key |
+| `SUPABASE_STORAGE_BUCKET` | Recommended | Server | Storage bucket name, defaults to `documents-temp` |
+| `SUPABASE_DATABASE_URL` | Yes | Server | Postgres URL for durable rate limiting |
+| `SUPABASE_DATABASE_SSL` | Recommended | Server | Set to `true` for Supabase hosted Postgres |
+| `OPENROUTER_API_KEY` | Yes | Server | Model provider API key |
+| `APP_BASE_URL` | Yes in production | Server | Canonical origin for origin checks |
+| `ALLOWED_ORIGINS` | Recommended | Server | Comma-separated origin allowlist |
+| `OPENROUTER_HTTP_REFERER` | Recommended | Server | Provider attribution header |
+| `CRON_SECRET` | Yes | Server | Protect cleanup endpoint |
+
+## Supabase Setup
+
+1. Create a Supabase project.
+2. Run [supabase/schema.sql](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/supabase/schema.sql:1) in the SQL editor.
+3. Confirm the `documents-temp` bucket is private.
+4. Copy the project URL, anon key, service role key, and database connection string into Vercel.
+5. Do not expose the service role key or database URL with a `VITE_` prefix.
+
+## Clerk Setup
+
+1. Create a Clerk application.
+2. Configure sign-ups as invite-only in the Clerk dashboard.
+3. Add the production domain and local development URL to Clerk allowed origins.
+4. Set `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel.
+
+## Local Development
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+The Vite dev server bridges `/api/uploads/create`, `/api/documents/reconstruct`, and `/api/maintenance/cleanup` to the local API handlers.
+
+## Vercel Deployment
+
+1. Import the repository into Vercel.
+2. Use the Vite framework preset.
+3. Add all required environment variables for Production and Preview as needed.
+4. Ensure `APP_BASE_URL` and `ALLOWED_ORIGINS` match the deployed origin.
+5. Deploy.
+
+`vercel.json` configures function timeouts, hardened headers, CSP allowlists for Clerk/Supabase/Vercel Live, and an hourly cleanup cron.
 
 ## Project Structure
 
 ```text
 .
 ├── api/
-│   └── reconstruct.ts        # Vercel serverless reconstruction endpoint
-├── public/
-│   ├── favicone.png          # App icon
-│   ├── manifest.json         # Web manifest
-│   └── service-worker.js     # Legacy-cache cleanup worker
+│   ├── _lib/                  # Server auth, HTTP, Supabase, PDF, rate limit helpers
+│   ├── documents/
+│   │   └── reconstruct.ts      # Authenticated extraction + reconstruction
+│   ├── maintenance/
+│   │   └── cleanup.ts          # Cron cleanup endpoint
+│   ├── uploads/
+│   │   └── create.ts           # Signed upload creation
+│   └── reconstruct.ts          # Disabled legacy endpoint
 ├── src/
-│   ├── components/
-│   │   ├── EditorWorkspace.tsx
-│   │   ├── LandingPage.tsx
-│   │   ├── ProcessingState.tsx
-│   │   └── UploadSection.tsx
-│   ├── lib/
-│   │   ├── openrouter.ts     # Frontend API client
-│   │   ├── pdf.ts            # Browser PDF extraction
-│   │   ├── reconstruction.ts # Prompt + model selection
-│   │   ├── sanitizer.ts      # Content sanitization
-│   │   ├── schemas.ts        # Shared runtime limits and validation
-│   │   └── utils.ts
+│   ├── components/             # Upload, processing, landing, editor UI
+│   ├── lib/                    # Browser API client, sanitizer, schemas, exports
 │   ├── App.tsx
-│   ├── index.css
 │   └── main.tsx
-├── .env.example
-├── package.json
+├── supabase/
+│   └── schema.sql              # Database, bucket, and rate limiter bootstrap
 ├── vercel.json
 └── vite.config.ts
 ```
 
-## Local Development
-
-### Prerequisites
-
-- Node.js 20.12+
-- npm
-
-### Setup
-
-```bash
-npm install
-cp .env.example .env
-```
-
-Set at least:
-
-```bash
-OPENROUTER_API_KEY="your-key"
-APP_BASE_URL="http://localhost:3000"
-ALLOWED_ORIGINS="http://localhost:3000"
-OPENROUTER_HTTP_REFERER="http://localhost:3000"
-```
-
-### Run
+## Scripts
 
 ```bash
 npm run dev
-```
-
-The Vite development server includes the local `/api/reconstruct` bridge through `vite.config.ts`, so the frontend and serverless handler share the same local origin during development.
-
-## Available Scripts
-
-```bash
-npm run dev
-npm run build
-npm run preview
 npm run lint
+npm run build
 npm run check
 npm run security:audit
-npm run clean
+npm run preview
 ```
-
-## Vercel Deployment
-
-### Required Vercel Project Settings
-
-1. Import the repository into Vercel.
-2. Set the framework preset to `Vite` if Vercel does not detect it automatically.
-3. Add the production environment variables:
-   - `OPENROUTER_API_KEY`
-   - `APP_BASE_URL`
-   - `ALLOWED_ORIGINS`
-   - `OPENROUTER_HTTP_REFERER`
-4. Optional but recommended: attach Vercel KV and expose:
-   - `KV_REST_API_URL`
-   - `KV_REST_API_TOKEN`
-5. Deploy.
-
-### Recommended Production Values
-
-If your production domain is `https://docs.example.com`:
-
-```bash
-APP_BASE_URL="https://docs.example.com"
-ALLOWED_ORIGINS="https://docs.example.com"
-OPENROUTER_HTTP_REFERER="https://docs.example.com"
-```
-
-If you use preview deployments and want them to work, include preview origins explicitly or generate them through your Vercel environment setup.
-
-## Security Checklist Before Going Live
-
-- Set `OPENROUTER_API_KEY` in Vercel and do not commit `.env`.
-- Set `APP_BASE_URL` to the exact production origin.
-- Set `ALLOWED_ORIGINS` to the exact allowed origins.
-- Attach Vercel KV if you want durable rate limiting across serverless instances.
-- Verify the CSP in `vercel.json` after any future third-party asset additions.
-- Keep `npm run check` and `npm run security:audit` green before deploys.
-- Review provider cost limits and quotas in OpenRouter.
 
 ## Operational Limits
 
-Current application guards:
-
-- Maximum PDF size: 15 MB
-- Maximum PDF pages: 40
-- Maximum extracted text: 200,000 characters
-- Maximum output size: 250,000 characters
-- Maximum API requests per IP per minute: 5
-
-These limits are designed to reduce abuse, lower timeout risk, and keep model costs bounded.
-
-## Known Limitations
-
-- Scanned image PDFs are not OCR-processed.
-- Rate limiting is durable only when Vercel KV REST variables are configured.
-- Very complex PDF layouts may still require manual editing after reconstruction.
-- DOCX preview fidelity depends on the generated markdown structure.
+- Maximum PDF size: `15 MB`
+- Maximum PDF pages: `40`
+- Maximum extracted text: `200,000` characters
+- Maximum reconstructed output: `250,000` characters
+- Temporary retention: `24 hours`
+- Rate limit: `20` reconstructions per Clerk user per day
 
 ## Verification
-
-Before merging or deploying, run:
 
 ```bash
 npm run check
 npm run security:audit
 ```
 
-## Contributing
+Recommended manual checks:
 
-1. Fork the repository.
-2. Create a branch for your change.
-3. Run the verification commands.
-4. Open a pull request with a clear description of the security and behavior impact.
+- Signed-out user cannot reach upload actions.
+- API calls without a Clerk bearer token return `401`.
+- A valid PDF uploads to the private Supabase bucket and creates a `documents` row.
+- A different Clerk user cannot reconstruct the document.
+- Invalid PDF signatures and oversized files are rejected before OpenRouter.
+- User receives `429` after the daily reconstruction quota.
+- Cleanup removes expired storage objects and marks rows `expired`.
+
+## Known Limitations
+
+- Scanned image PDFs are not OCR processed.
+- Very complex layouts may still need manual editing after reconstruction.
+- Vercel Function duration and OpenRouter model latency can still limit very large documents.
 
 ## License
 
-No license file is included in this repository yet. Add a project license before publishing it as a public open-source project.
+No license file is included yet. Add a license before publishing as a public open-source project.

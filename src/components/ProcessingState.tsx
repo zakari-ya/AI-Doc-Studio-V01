@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 
-type ProcessingPhase = "extracting" | "reconstructing" | "finalizing";
+type ProcessingPhase = "uploading" | "extracting" | "reconstructing" | "finalizing";
 
 const PHASE_COPY: Record<
   ProcessingPhase,
@@ -14,9 +14,21 @@ const PHASE_COPY: Record<
     progressCeiling: number;
   }
 > = {
+  uploading: {
+    title: "Securing upload...",
+    description: "Creating an authenticated private storage slot and uploading the PDF directly to Supabase Storage.",
+    messages: [
+      "Verifying session...",
+      "Creating signed upload...",
+      "Uploading encrypted transport payload...",
+      "Registering document ownership...",
+    ],
+    progressFloor: 4,
+    progressCeiling: 28,
+  },
   extracting: {
     title: "Extracting PDF text...",
-    description: "Reading the PDF locally and preparing a clean text payload before the AI reconstruction step.",
+    description: "The server is reading the private PDF transiently and validating it before AI reconstruction.",
     messages: [
       "Opening PDF container...",
       "Reading document pages...",
