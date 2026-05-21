@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../_lib/auth";
 import { SUPABASE_STORAGE_BUCKET } from "../_lib/config";
 import {
+  createBaseHeaders,
   enforceBodySize,
   enforceJsonRequest,
   enforceMethod,
@@ -11,10 +12,8 @@ import {
   handleApiError,
   HttpError,
   type ApiRequest,
-  type ApiResponse,
   readJsonBody,
   sendJson,
-  setBaseHeaders,
 } from "../_lib/http";
 import { extractTextFromPdfBuffer } from "../_lib/pdf";
 import { reconstructText } from "../_lib/reconstruction";
@@ -34,13 +33,13 @@ function getProviderReferer(req: ApiRequest) {
   }
 
   const host =
-    getHeaderValue(req.headers["x-forwarded-host"]) ??
-    getHeaderValue(req.headers.host);
+    getHeaderValue(req.headers, "x-forwarded-host") ??
+    getHeaderValue(req.headers, "host");
   if (!host) {
     return process.env.APP_BASE_URL;
   }
 
-  const forwardedProto = getHeaderValue(req.headers["x-forwarded-proto"]);
+  const forwardedProto = getHeaderValue(req.headers, "x-forwarded-proto");
   return `${forwardedProto ?? "https"}://${host}`;
 }
 
@@ -59,12 +58,11 @@ async function markFailed(
     .eq("id", documentId);
 }
 
-export default async function handler(req: ApiRequest, res: ApiResponse) {
+export async function POST(req: ApiRequest) {
   const requestId = randomUUID();
-  setBaseHeaders(res, requestId);
 
   try {
-    enforceMethod(req, res);
+    enforceMethod(req);
     enforceOrigin(req);
     enforceJsonRequest(req);
     enforceBodySize(req, MAX_BODY_BYTES);
@@ -74,9 +72,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const validation = ReconstructDocumentSchema.safeParse(body);
 
     if (!validation.success) {
-      return sendJson(res, 400, {
-        error: validation.error.issues[0]?.message ?? "Invalid reconstruction request.",
-      });
+      return sendJson(
+        400,
+        {
+          error:
+            validation.error.issues[0]?.message ?? "Invalid reconstruction request.",
+        },
+        createBaseHeaders(requestId),
+      );
     }
 
     const supabase = getSupabaseAdmin();
@@ -140,11 +143,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         throw new Error(updateError.message);
       }
 
-      return sendJson(res, 200, {
-        documentId: document.id,
-        content: reconstructedMarkdown,
-        originalText: extractedText,
-      });
+      return sendJson(
+        200,
+        {
+          documentId: document.id,
+          content: reconstructedMarkdown,
+          originalText: extractedText,
+        },
+        createBaseHeaders(requestId),
+      );
     } catch (processingError) {
       const message =
         processingError instanceof Error
@@ -154,6 +161,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       throw processingError;
     }
   } catch (error) {
-    return handleApiError(error, res, requestId);
+    return handleApiError(error, requestId);
   }
 }

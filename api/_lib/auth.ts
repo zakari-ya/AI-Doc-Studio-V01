@@ -8,7 +8,7 @@ export type AuthContext = {
 };
 
 export async function requireAuth(req: ApiRequest): Promise<AuthContext> {
-  const authorization = getHeaderValue(req.headers.authorization);
+  const authorization = getHeaderValue(req.headers, "authorization");
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
 
   if (!token) {

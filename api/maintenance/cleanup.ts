@@ -1,12 +1,11 @@
 import { randomUUID } from "node:crypto";
 import {
+  createBaseHeaders,
   enforceMethod,
   handleApiError,
   HttpError,
   type ApiRequest,
-  type ApiResponse,
   sendJson,
-  setBaseHeaders,
   getHeaderValue,
 } from "../_lib/http";
 import { getSupabaseAdmin, type DocumentRow } from "../_lib/supabase";
@@ -17,21 +16,20 @@ function requireCronAuth(req: ApiRequest) {
     throw new HttpError(500, "CRON_SECRET is not configured.");
   }
 
-  const authorization = getHeaderValue(req.headers.authorization);
+  const authorization = getHeaderValue(req.headers, "authorization");
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-  const headerSecret = getHeaderValue(req.headers["x-cron-secret"]);
+  const headerSecret = getHeaderValue(req.headers, "x-cron-secret");
 
   if (token !== secret && headerSecret !== secret) {
     throw new HttpError(401, "Maintenance authorization required.");
   }
 }
 
-export default async function handler(req: ApiRequest, res: ApiResponse) {
+export async function POST(req: ApiRequest) {
   const requestId = randomUUID();
-  setBaseHeaders(res, requestId);
 
   try {
-    enforceMethod(req, res);
+    enforceMethod(req);
     requireCronAuth(req);
 
     const supabase = getSupabaseAdmin();
@@ -79,10 +77,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       }
     }
 
-    return sendJson(res, 200, {
-      expired: documents.length,
-    });
+    return sendJson(
+      200,
+      {
+        expired: documents.length,
+      },
+      createBaseHeaders(requestId),
+    );
   } catch (error) {
-    return handleApiError(error, res, requestId);
+    return handleApiError(error, requestId);
   }
 }

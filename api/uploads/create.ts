@@ -7,6 +7,7 @@ import {
 } from "../_lib/config";
 import { requireAuth } from "../_lib/auth";
 import {
+  createBaseHeaders,
   enforceBodySize,
   enforceJsonRequest,
   enforceMethod,
@@ -14,10 +15,8 @@ import {
   handleApiError,
   HttpError,
   type ApiRequest,
-  type ApiResponse,
   readJsonBody,
   sendJson,
-  setBaseHeaders,
 } from "../_lib/http";
 import { getSupabaseAdmin } from "../_lib/supabase";
 
@@ -40,12 +39,11 @@ function sanitizeFileName(fileName: string) {
     : `${cleaned || "document"}.pdf`;
 }
 
-export default async function handler(req: ApiRequest, res: ApiResponse) {
+export async function POST(req: ApiRequest) {
   const requestId = randomUUID();
-  setBaseHeaders(res, requestId);
 
   try {
-    enforceMethod(req, res);
+    enforceMethod(req);
     enforceOrigin(req);
     enforceJsonRequest(req);
     enforceBodySize(req, MAX_BODY_BYTES);
@@ -55,9 +53,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const validation = CreateUploadSchema.safeParse(body);
 
     if (!validation.success) {
-      return sendJson(res, 400, {
-        error: validation.error.issues[0]?.message ?? "Invalid upload request.",
-      });
+      return sendJson(
+        400,
+        {
+          error: validation.error.issues[0]?.message ?? "Invalid upload request.",
+        },
+        createBaseHeaders(requestId),
+      );
     }
 
     const supabase = getSupabaseAdmin();
@@ -103,13 +105,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       );
     }
 
-    return sendJson(res, 200, {
-      documentId,
-      storagePath,
-      signedUpload: uploadData,
-      expiresAt,
-    });
+    return sendJson(
+      200,
+      {
+        documentId,
+        storagePath,
+        signedUpload: uploadData,
+        expiresAt,
+      },
+      createBaseHeaders(requestId),
+    );
   } catch (error) {
-    return handleApiError(error, res, requestId);
+    return handleApiError(error, requestId);
   }
 }

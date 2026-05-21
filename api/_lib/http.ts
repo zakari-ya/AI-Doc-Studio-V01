@@ -1,10 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
-
-export type ApiRequest = IncomingMessage & {
-  body?: unknown;
-};
-
-export type ApiResponse = ServerResponse;
+export type ApiRequest = Request;
 
 export class HttpError extends Error {
   statusCode: number;
@@ -22,42 +16,37 @@ export class HttpError extends Error {
   }
 }
 
+export function createBaseHeaders(
+  requestId: string,
+  headers: HeadersInit = {},
+) {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("Cache-Control", "no-store");
+  responseHeaders.set("Referrer-Policy", "no-referrer");
+  responseHeaders.set("X-Content-Type-Options", "nosniff");
+  responseHeaders.set("X-Request-Id", requestId);
+  return responseHeaders;
+}
+
 export function sendJson(
-  res: ApiResponse,
   statusCode: number,
   body: Record<string, unknown>,
-  headers: Record<string, string> = {},
+  headers: HeadersInit = {},
 ) {
-  res.statusCode = statusCode;
-
-  if (!res.hasHeader("Content-Type")) {
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
+  const responseHeaders = new Headers(headers);
+  if (!responseHeaders.has("Content-Type")) {
+    responseHeaders.set("Content-Type", "application/json; charset=utf-8");
   }
 
-  for (const [key, value] of Object.entries(headers)) {
-    res.setHeader(key, value);
-  }
-
-  res.end(JSON.stringify(body));
+  return new Response(JSON.stringify(body), {
+    status: statusCode,
+    headers: responseHeaders,
+  });
 }
 
-export function setBaseHeaders(res: ApiResponse, requestId: string) {
-  res.setHeader("Cache-Control", "no-store");
-  res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Request-Id", requestId);
-}
-
-export function getHeaderValue(value: string | string[] | undefined) {
-  if (typeof value === "string" && value.length > 0) {
-    return value;
-  }
-
-  if (Array.isArray(value) && value.length > 0) {
-    return value[0] ?? null;
-  }
-
-  return null;
+export function getHeaderValue(headers: Headers, name: string) {
+  const value = headers.get(name);
+  return value && value.length > 0 ? value : null;
 }
 
 function normalizeOrigin(value: string) {
@@ -82,10 +71,10 @@ function buildOriginFromHost(host: string, forwardedProto?: string | null) {
 function getAllowedOrigins(req: ApiRequest) {
   const allowedOrigins = new Set<string>();
   const envOrigins = process.env.ALLOWED_ORIGINS?.split(",") ?? [];
-  const forwardedProto = getHeaderValue(req.headers["x-forwarded-proto"]);
+  const forwardedProto = getHeaderValue(req.headers, "x-forwarded-proto");
   const host =
-    getHeaderValue(req.headers["x-forwarded-host"]) ??
-    getHeaderValue(req.headers.host);
+    getHeaderValue(req.headers, "x-forwarded-host") ??
+    getHeaderValue(req.headers, "host");
 
   for (const candidate of envOrigins) {
     const normalized = normalizeOrigin(candidate.trim());
@@ -123,18 +112,18 @@ function getAllowedOrigins(req: ApiRequest) {
 }
 
 function getRequestOrigin(req: ApiRequest) {
-  const origin = getHeaderValue(req.headers.origin);
+  const origin = getHeaderValue(req.headers, "origin");
   if (origin) {
     return normalizeOrigin(origin);
   }
 
-  const referer = getHeaderValue(req.headers.referer);
+  const referer = getHeaderValue(req.headers, "referer");
   return referer ? normalizeOrigin(referer) : null;
 }
 
 export function enforceOrigin(req: ApiRequest) {
   const requestOrigin = getRequestOrigin(req);
-  const secFetchSite = getHeaderValue(req.headers["sec-fetch-site"]);
+  const secFetchSite = getHeaderValue(req.headers, "sec-fetch-site");
 
   if (!requestOrigin) {
     if (secFetchSite && secFetchSite !== "same-origin" && secFetchSite !== "none") {
@@ -149,25 +138,22 @@ export function enforceOrigin(req: ApiRequest) {
 }
 
 export function enforceJsonRequest(req: ApiRequest) {
-  const contentType = getHeaderValue(req.headers["content-type"]);
+  const contentType = getHeaderValue(req.headers, "content-type");
   if (!contentType?.toLowerCase().startsWith("application/json")) {
     throw new HttpError(415, "Content-Type must be application/json.");
   }
 }
 
-export function enforceMethod(
-  req: ApiRequest,
-  res: ApiResponse,
-  allowedMethod = "POST",
-) {
-  if (req.method !== allowedMethod) {
-    res.setHeader("Allow", allowedMethod);
-    throw new HttpError(405, "Method not allowed.");
+export function enforceMethod(req: ApiRequest, allowedMethod = "POST") {
+  if (req.method.toUpperCase() !== allowedMethod.toUpperCase()) {
+    throw new HttpError(405, "Method not allowed.", {
+      Allow: allowedMethod,
+    });
   }
 }
 
 export function enforceBodySize(req: ApiRequest, maxBodyBytes: number) {
-  const rawContentLength = getHeaderValue(req.headers["content-length"]);
+  const rawContentLength = getHeaderValue(req.headers, "content-length");
   if (!rawContentLength) {
     return;
   }
@@ -185,52 +171,29 @@ export async function readJsonBody(
   req: ApiRequest,
   maxBodyBytes: number,
 ): Promise<unknown> {
-  if (req.body !== undefined) {
-    if (typeof req.body === "string") {
-      try {
-        return JSON.parse(req.body);
-      } catch {
-        throw new HttpError(400, "Request body must be valid JSON.");
-      }
-    }
+  const rawBody = await req.text();
+  const rawBodyBytes = Buffer.byteLength(rawBody, "utf8");
 
-    return req.body;
+  if (rawBodyBytes > maxBodyBytes) {
+    throw new HttpError(
+      413,
+      `Request body too large. Keep payloads below ${maxBodyBytes.toLocaleString()} bytes.`,
+    );
   }
 
-  const chunks: Buffer[] = [];
-  let totalBytes = 0;
-
-  for await (const chunk of req) {
-    const bufferChunk = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
-    totalBytes += bufferChunk.length;
-
-    if (totalBytes > maxBodyBytes) {
-      throw new HttpError(
-        413,
-        `Request body too large. Keep payloads below ${maxBodyBytes.toLocaleString()} bytes.`,
-      );
-    }
-
-    chunks.push(bufferChunk);
-  }
-
-  const rawBody = Buffer.concat(chunks).toString("utf8").trim();
-  if (!rawBody) {
+  const trimmed = rawBody.trim();
+  if (!trimmed) {
     return {};
   }
 
   try {
-    return JSON.parse(rawBody);
+    return JSON.parse(trimmed);
   } catch {
     throw new HttpError(400, "Request body must be valid JSON.");
   }
 }
 
-export function handleApiError(
-  error: unknown,
-  res: ApiResponse,
-  requestId: string,
-) {
+export function handleApiError(error: unknown, requestId: string) {
   const httpError =
     error instanceof HttpError
       ? error
@@ -246,9 +209,8 @@ export function handleApiError(
   }
 
   return sendJson(
-    res,
     httpError.statusCode,
     { error: httpError.message },
-    httpError.headers,
+    createBaseHeaders(requestId, httpError.headers),
   );
 }
