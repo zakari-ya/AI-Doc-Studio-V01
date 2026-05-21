@@ -15,6 +15,7 @@ import {
   readJsonBody,
   sendJson,
 } from "../_lib/http";
+import { createNodeHandler } from "../_lib/node-adapter";
 import { extractTextFromPdfBuffer } from "../_lib/pdf";
 import { reconstructText } from "../_lib/reconstruction";
 import { enforceUserRateLimit } from "../_lib/rate-limit";
@@ -164,3 +165,5 @@ export async function POST(req: ApiRequest) {
     return handleApiError(error, requestId);
   }
 }
+
+export default createNodeHandler(POST);

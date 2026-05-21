@@ -8,6 +8,7 @@ import {
   sendJson,
   getHeaderValue,
 } from "../_lib/http";
+import { createNodeHandler } from "../_lib/node-adapter";
 import { getSupabaseAdmin, type DocumentRow } from "../_lib/supabase";
 
 function requireCronAuth(req: ApiRequest) {
@@ -88,3 +89,5 @@ export async function POST(req: ApiRequest) {
     return handleApiError(error, requestId);
   }
 }
+
+export default createNodeHandler(POST);

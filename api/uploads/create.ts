@@ -6,6 +6,7 @@ import {
   SUPABASE_STORAGE_BUCKET,
 } from "../_lib/config";
 import { requireAuth } from "../_lib/auth";
+import { createNodeHandler } from "../_lib/node-adapter";
 import {
   createBaseHeaders,
   enforceBodySize,
@@ -119,3 +120,5 @@ export async function POST(req: ApiRequest) {
     return handleApiError(error, requestId);
   }
 }
+
+export default createNodeHandler(POST);

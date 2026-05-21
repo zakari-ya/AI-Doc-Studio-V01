@@ -4,6 +4,7 @@ import {
   createBaseHeaders,
   sendJson,
 } from "./_lib/http";
+import { createNodeHandler } from "./_lib/node-adapter";
 
 export async function POST(_req: ApiRequest) {
   const requestId = randomUUID();
@@ -17,3 +18,5 @@ export async function POST(_req: ApiRequest) {
     createBaseHeaders(requestId),
   );
 }
+
+export default createNodeHandler(POST);
