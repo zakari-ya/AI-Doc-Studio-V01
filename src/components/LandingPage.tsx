@@ -1,12 +1,15 @@
 import { motion } from "motion/react";
 import { ArrowRight, Terminal, Globe, Lock, Check } from "lucide-react";
 import { cn } from "../lib/utils";
+import type { ReactNode } from "react";
 
 interface LandingPageProps {
+  authControls: ReactNode;
+  isAuthenticated: boolean;
   onStart: () => void;
 }
 
-export function LandingPage({ onStart }: LandingPageProps) {
+export function LandingPage({ authControls, isAuthenticated, onStart }: LandingPageProps) {
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     const element = document.getElementById(targetId);
@@ -31,13 +34,14 @@ export function LandingPage({ onStart }: LandingPageProps) {
           <a href="#tech" onClick={(e) => handleScroll(e, "tech")} className="hover:text-white transition-colors">Protocol</a>
           <a href="#faq" onClick={(e) => handleScroll(e, "faq")} className="hover:text-white transition-colors">Knowledge</a>
         </nav>
-        <div className="flex mr-2 md:mr-0">
-           <button
-             onClick={onStart}
-             className="px-4 py-1.5 bg-white text-black rounded-md text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-200 transition-all active:scale-95"
-           >
-             Initialize
-           </button>
+        <div className="mr-2 flex items-center gap-3 md:mr-0">
+          {authControls}
+          <button
+            onClick={onStart}
+            className="px-4 py-1.5 bg-white text-black rounded-md text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-200 transition-all active:scale-95"
+          >
+            Initialize
+          </button>
         </div>
       </header>
 
@@ -86,7 +90,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               onClick={onStart}
               className="w-full px-8 py-4 bg-white text-black rounded-lg font-bold text-xs hover:bg-zinc-200 transition-all uppercase tracking-widest flex items-center justify-center"
             >
-              Start Reconstructing
+              {isAuthenticated ? "Start Reconstructing" : "Sign In to Start"}
             </button>
             <button className="w-full px-8 py-4 bg-white/5 border border-white/10 rounded-lg font-bold text-xs hover:bg-white/10 transition-all text-white uppercase tracking-widest flex items-center justify-center">
               View Documentation
@@ -410,4 +414,3 @@ export function LandingPage({ onStart }: LandingPageProps) {
     </div>
   );
 }
-

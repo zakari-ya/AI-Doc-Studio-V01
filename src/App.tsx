@@ -3,16 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Suspense, lazy, useState } from "react";
-import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from "@clerk/clerk-react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { EmailOtpType, Session } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "motion/react";
 import { UploadSection } from "./components/UploadSection";
 import { ProcessingState } from "./components/ProcessingState";
 import { LandingPage } from "./components/LandingPage";
+import { AuthModal } from "./components/AuthModal";
 import { processDocumentWithStorage } from "./lib/openrouter";
+import { getSupabaseBrowserClient } from "./lib/supabase";
 
 type AppState = "LANDING" | "UPLOAD" | "PROCESSING" | "SUCCESS" | "ERROR";
 type ProcessingPhase = "uploading" | "extracting" | "reconstructing" | "finalizing";
+type AuthModalPhase = "idle" | "sending" | "sent" | "callback";
+
+const PENDING_START_KEY = "ai-doc-studio:pending-start";
+const AUTH_QUERY_KEYS = [
+  "token_hash",
+  "type",
+  "error",
+  "error_code",
+  "error_description",
+  "access_token",
+  "refresh_token",
+  "expires_at",
+  "expires_in",
+  "token_type",
+  "provider_token",
+  "provider_refresh_token",
+] as const;
 
 const EditorWorkspace = lazy(() =>
   import("./components/EditorWorkspace").then((module) => ({
@@ -20,8 +45,74 @@ const EditorWorkspace = lazy(() =>
   })),
 );
 
+function markPendingStart() {
+  sessionStorage.setItem(PENDING_START_KEY, "1");
+}
+
+function clearPendingStart() {
+  sessionStorage.removeItem(PENDING_START_KEY);
+}
+
+function consumePendingStart() {
+  const hasPendingStart = sessionStorage.getItem(PENDING_START_KEY) === "1";
+  if (hasPendingStart) {
+    clearPendingStart();
+  }
+
+  return hasPendingStart;
+}
+
+function hasPendingStart() {
+  return sessionStorage.getItem(PENDING_START_KEY) === "1";
+}
+
+function normalizeOtpType(value: string | null): EmailOtpType | null {
+  switch (value) {
+    case "email":
+    case "recovery":
+    case "invite":
+    case "email_change":
+      return value;
+    default:
+      return null;
+  }
+}
+
+function getHashParams() {
+  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+}
+
+function clearAuthArtifactsFromUrl() {
+  const url = new URL(window.location.href);
+  const hashParams = getHashParams();
+
+  for (const key of AUTH_QUERY_KEYS) {
+    url.searchParams.delete(key);
+    hashParams.delete(key);
+  }
+
+  const nextUrl = `${url.pathname}${url.search}${hashParams.toString() ? `#${hashParams.toString()}` : ""}`;
+  window.history.replaceState({}, document.title, nextUrl);
+}
+
+function hasAuthUrlPayload() {
+  const url = new URL(window.location.href);
+  const hashParams = getHashParams();
+
+  return (
+    Boolean(url.searchParams.get("token_hash")) ||
+    Boolean(url.searchParams.get("error_description")) ||
+    hashParams.has("access_token") ||
+    hashParams.has("refresh_token") ||
+    hashParams.has("error_description")
+  );
+}
+
+function createAuthErrorMessage(error: string) {
+  return error.trim() || "Authentication failed. Request a fresh magic link and try again.";
+}
+
 export default function App() {
-  const { getToken } = useAuth();
   const [state, setState] = useState<AppState>("LANDING");
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>("uploading");
   const [markdown, setMarkdown] = useState("");
@@ -29,6 +120,240 @@ export default function App() {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalPhase, setAuthModalPhase] = useState<AuthModalPhase>("idle");
+  const [authModalEmail, setAuthModalEmail] = useState("");
+  const [authModalError, setAuthModalError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const isAuthenticated = Boolean(session?.user);
+  const pendingStart = hasPendingStart();
+  const userEmail = session?.user.email ?? null;
+
+  const resetWorkspaceState = (nextState: AppState = "UPLOAD") => {
+    setState(nextState);
+    setProcessingPhase("uploading");
+    setMarkdown("");
+    setOriginalText("");
+    setFileName("");
+    setError(null);
+    setNotice(null);
+  };
+
+  const handleSignedInState = (nextSession: Session | null) => {
+    setSession(nextSession);
+    setIsSigningOut(false);
+
+    if (!nextSession?.user) {
+      return;
+    }
+
+    clearAuthArtifactsFromUrl();
+    setIsAuthModalOpen(false);
+    setAuthModalPhase("idle");
+    setAuthModalError(null);
+
+    if (consumePendingStart()) {
+      resetWorkspaceState("UPLOAD");
+    }
+  };
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    const url = new URL(window.location.href);
+    const tokenHash = url.searchParams.get("token_hash");
+    const otpType = normalizeOtpType(url.searchParams.get("type"));
+    const searchError = url.searchParams.get("error_description");
+    const hashError = getHashParams().get("error_description");
+    const hasCallbackPayload = hasAuthUrlPayload();
+    let isDisposed = false;
+
+    if (hasCallbackPayload) {
+      setIsAuthModalOpen(true);
+      setAuthModalPhase("callback");
+      setAuthModalError(null);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (isDisposed) {
+        return;
+      }
+
+      if (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && nextSession)) {
+        handleSignedInState(nextSession);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        clearPendingStart();
+        resetWorkspaceState("LANDING");
+        setSession(null);
+        setIsAuthModalOpen(false);
+        setAuthModalPhase("idle");
+        setAuthModalError(null);
+      }
+    });
+
+    void (async () => {
+      try {
+        if (tokenHash && otpType) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType,
+          });
+
+          clearAuthArtifactsFromUrl();
+
+          if (verifyError && !isDisposed) {
+            setIsAuthModalOpen(true);
+            setAuthModalPhase("idle");
+            setAuthModalError(createAuthErrorMessage(verifyError.message));
+          }
+        } else if ((searchError || hashError) && !isDisposed) {
+          clearAuthArtifactsFromUrl();
+          setIsAuthModalOpen(true);
+          setAuthModalPhase("idle");
+          setAuthModalError(
+            createAuthErrorMessage(decodeURIComponent(searchError ?? hashError ?? "")),
+          );
+        }
+
+        const {
+          data: { session: currentSession },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (isDisposed) {
+          return;
+        }
+
+        if (sessionError) {
+          setIsAuthModalOpen(true);
+          setAuthModalPhase("idle");
+          setAuthModalError("Authentication session could not be restored.");
+        } else {
+          setSession(currentSession);
+          if (currentSession?.user) {
+            handleSignedInState(currentSession);
+          } else if (hasCallbackPayload) {
+            setIsAuthModalOpen(true);
+            setAuthModalPhase("idle");
+            setAuthModalError(
+              "Magic link sign-in did not complete. Request a fresh link and try again.",
+            );
+          }
+        }
+      } finally {
+        if (!isDisposed) {
+          setIsAuthReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      isDisposed = true;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthReady || isAuthenticated || state === "LANDING") {
+      return;
+    }
+
+    resetWorkspaceState("LANDING");
+    setIsAuthModalOpen(true);
+    setAuthModalPhase("idle");
+    setAuthModalError("Your session expired. Sign in again to continue.");
+  }, [isAuthReady, isAuthenticated, state]);
+
+  const handleOpenAuthModal = (queueStart = false) => {
+    if (queueStart) {
+      markPendingStart();
+    }
+
+    setIsAuthModalOpen(true);
+    setAuthModalPhase("idle");
+    setAuthModalError(null);
+  };
+
+  const handleCloseAuthModal = () => {
+    if (authModalPhase === "callback") {
+      return;
+    }
+
+    if (authModalPhase === "idle") {
+      clearPendingStart();
+    }
+
+    setIsAuthModalOpen(false);
+    setAuthModalPhase("idle");
+    setAuthModalError(null);
+  };
+
+  const handleRequestMagicLink = async () => {
+    const supabase = getSupabaseBrowserClient();
+    const email = authModalEmail.trim().toLowerCase();
+
+    if (!email) {
+      setAuthModalError("Enter the invited email address you want to use.");
+      return;
+    }
+
+    setAuthModalPhase("sending");
+    setAuthModalError(null);
+
+    const { error: signInError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (signInError) {
+      setAuthModalPhase("idle");
+      setAuthModalError(createAuthErrorMessage(signInError.message));
+      return;
+    }
+
+    setAuthModalEmail(email);
+    setAuthModalPhase("sent");
+  };
+
+  const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    setIsSigningOut(true);
+    setAuthModalError(null);
+
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setIsSigningOut(false);
+      setAuthModalError(createAuthErrorMessage(signOutError.message));
+      setIsAuthModalOpen(true);
+      setAuthModalPhase("idle");
+      return;
+    }
+
+    clearPendingStart();
+    resetWorkspaceState("LANDING");
+    setSession(null);
+    setAuthModalEmail("");
+    setIsSigningOut(false);
+  };
+
+  const handleStart = () => {
+    if (isAuthenticated) {
+      resetWorkspaceState("UPLOAD");
+      return;
+    }
+
+    handleOpenAuthModal(true);
+  };
 
   const handleProcess = async (file: File) => {
     setFileName(file.name);
@@ -48,7 +373,7 @@ export default function App() {
         () => setProcessingPhase("reconstructing"),
         2600,
       );
-      const result = await processDocumentWithStorage(file, getToken);
+      const result = await processDocumentWithStorage(file);
       setOriginalText(result.originalText);
       setMarkdown(result.markdown);
       setNotice(null);
@@ -70,46 +395,47 @@ export default function App() {
   };
 
   const handleReset = () => {
-    setState("UPLOAD");
-    setProcessingPhase("uploading");
-    setMarkdown("");
-    setOriginalText("");
-    setFileName("");
-    setError(null);
-    setNotice(null);
+    resetWorkspaceState("UPLOAD");
+  };
+
+  const renderLandingAuthControls = (): ReactNode => {
+    if (isAuthenticated) {
+      return (
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          disabled={isSigningOut}
+          className="px-4 py-1.5 border border-white/10 bg-white/5 text-white rounded-md text-[10px] font-bold uppercase tracking-wider transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSigningOut ? "Signing Out" : "Sign Out"}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleOpenAuthModal(false)}
+        className="px-4 py-1.5 border border-white/10 bg-white/5 text-white rounded-md text-[10px] font-bold uppercase tracking-wider transition-all hover:bg-white/10"
+      >
+        Login
+      </button>
+    );
   };
 
   return (
     <div className="min-h-screen bg-[#030303] text-foreground selection:bg-white/10 dashed-grid">
-      <SignedOut>
-        <div className="flex min-h-screen items-center justify-center p-6">
-          <div className="max-w-md rounded-[2rem] border border-white/10 bg-black/60 p-8 text-center shadow-[0_0_80px_rgba(255,255,255,0.06)] backdrop-blur-2xl">
-            <img src="/favicone.png" className="mx-auto mb-6 h-10 w-10 object-contain" alt="AI-Doc-Studio Logo" />
-            <h1 className="mb-4 font-serif text-3xl italic tracking-tight text-white">
-              Secure entry required
-            </h1>
-            <p className="mb-8 text-sm leading-6 text-zinc-500">
-              Sign in to upload private PDFs, run reconstruction, and keep every document tied to your account.
-            </p>
-            <SignInButton mode="modal">
-              <button className="w-full rounded-full bg-white px-8 py-4 text-[10px] font-bold uppercase tracking-[0.35em] text-black transition hover:bg-zinc-200">
-                Sign In
-              </button>
-            </SignInButton>
-          </div>
-        </div>
-      </SignedOut>
-
-      <SignedIn>
-        <div className="fixed right-4 top-4 z-[60] rounded-full border border-white/10 bg-black/70 p-2 backdrop-blur-xl">
-          <UserButton afterSignOutUrl="/" />
-        </div>
-        <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
         {state === "LANDING" && (
-          <LandingPage key="landing" onStart={() => setState("UPLOAD")} />
+          <LandingPage
+            key="landing"
+            authControls={renderLandingAuthControls()}
+            isAuthenticated={isAuthenticated}
+            onStart={handleStart}
+          />
         )}
 
-        {state === "UPLOAD" && (
+        {state === "UPLOAD" && isAuthenticated && (
           <motion.div
             key="upload"
             initial={{ opacity: 0, scale: 0.98 }}
@@ -137,7 +463,7 @@ export default function App() {
               <UploadSection onUpload={handleProcess} />
               <div className="flex justify-center mt-12 mb-12 md:mt-20">
                 <button
-                  onClick={() => setState("LANDING")}
+                  onClick={() => resetWorkspaceState("LANDING")}
                   className="text-[9px] md:text-[10px] font-bold text-zinc-700 hover:text-white uppercase tracking-[0.3em] md:tracking-[0.4em] transition-all flex items-center gap-3 md:gap-4 group"
                 >
                   <div className="w-6 md:w-8 h-px bg-zinc-800 group-hover:w-10 md:group-hover:w-12 group-hover:bg-white transition-all" />
@@ -148,11 +474,11 @@ export default function App() {
           </motion.div>
         )}
 
-        {state === "PROCESSING" && (
+        {state === "PROCESSING" && isAuthenticated && (
           <ProcessingState key="processing" phase={processingPhase} />
         )}
 
-        {state === "SUCCESS" && (
+        {state === "SUCCESS" && isAuthenticated && (
           <Suspense fallback={<ProcessingState key="editor-loading" phase="finalizing" />}>
             <EditorWorkspace
               key="success"
@@ -161,12 +487,12 @@ export default function App() {
               original={originalText}
               fileName={fileName}
               onBack={handleReset}
-              onHome={() => setState("LANDING")}
+              onHome={() => resetWorkspaceState("LANDING")}
             />
           </Suspense>
         )}
 
-        {state === "ERROR" && (
+        {state === "ERROR" && isAuthenticated && (
           <motion.div
             key="error"
             initial={{ opacity: 0 }}
@@ -193,8 +519,18 @@ export default function App() {
             </div>
           </motion.div>
         )}
-        </AnimatePresence>
-      </SignedIn>
+      </AnimatePresence>
+
+      <AuthModal
+        email={authModalEmail}
+        error={authModalError}
+        isOpen={isAuthModalOpen}
+        onClose={handleCloseAuthModal}
+        onEmailChange={setAuthModalEmail}
+        onSubmit={handleRequestMagicLink}
+        pendingStart={pendingStart}
+        phase={authModalPhase}
+      />
     </div>
   );
 }

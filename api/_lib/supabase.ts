@@ -11,7 +11,7 @@ export type DocumentStatus =
 
 export type DocumentRow = {
   id: string;
-  clerk_user_id: string;
+  auth_user_id: string;
   original_file_name: string;
   storage_bucket: string;
   storage_path: string;
@@ -34,6 +34,7 @@ export function getSupabaseAdmin() {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     },
   );

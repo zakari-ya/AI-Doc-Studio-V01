@@ -1,9 +1,10 @@
-import { verifyToken } from "@clerk/backend";
 import type { ApiRequest } from "./http";
+import { getSupabaseAdmin } from "./supabase";
 import { getHeaderValue, HttpError } from "./http";
 
 export type AuthContext = {
   userId: string;
+  email: string | null;
 };
 
 export async function requireAuth(req: ApiRequest): Promise<AuthContext> {
@@ -14,25 +15,27 @@ export async function requireAuth(req: ApiRequest): Promise<AuthContext> {
     throw new HttpError(401, "Authentication required.");
   }
 
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) {
-    throw new HttpError(500, "CLERK_SECRET_KEY is not configured.");
-  }
+  const supabase = getSupabaseAdmin();
 
   try {
-    const payload = await verifyToken(token, { secretKey });
-    const userId = payload.sub;
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
 
-    if (!userId) {
-      throw new HttpError(401, "Invalid Clerk session.");
+    if (error || !user?.id) {
+      throw new HttpError(401, "Invalid Supabase session.");
     }
 
-    return { userId };
+    return {
+      userId: user.id,
+      email: user.email ?? null,
+    };
   } catch (error) {
     if (error instanceof HttpError) {
       throw error;
     }
 
-    throw new HttpError(401, "Invalid or expired Clerk session.");
+    throw new HttpError(401, "Invalid or expired Supabase session.");
   }
 }

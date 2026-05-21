@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let client: SupabaseClient | null = null;
+export const SUPABASE_STORAGE_BUCKET =
+  import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || "documents-temp";
 
 export function getSupabaseBrowserClient() {
   if (client) {
@@ -16,9 +18,10 @@ export function getSupabaseBrowserClient() {
 
   client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: "implicit",
     },
   });
 

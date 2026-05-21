@@ -17,8 +17,6 @@
     "security:audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
-    "@clerk/backend": "^3.4.11",
-    "@clerk/clerk-react": "^5.61.6",
     "@supabase/supabase-js": "^2.106.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.14",

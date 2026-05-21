@@ -12,6 +12,7 @@ import {
   enforceMethod,
   enforceOrigin,
   handleApiError,
+  HttpError,
   type ApiRequest,
   type ApiResponse,
   readJsonBody,
@@ -69,7 +70,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     const { error: insertError } = await supabase.from("documents").insert({
       id: documentId,
-      clerk_user_id: auth.userId,
+      auth_user_id: auth.userId,
       original_file_name: validation.data.fileName,
       storage_bucket: SUPABASE_STORAGE_BUCKET,
       storage_path: storagePath,
@@ -80,7 +81,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     });
 
     if (insertError) {
-      throw new Error(insertError.message);
+      console.error(`[${requestId}] Supabase documents insert failed`, insertError);
+      throw new HttpError(
+        500,
+        "Supabase documents table write failed. Check the `documents` table schema and the server-side Supabase key.",
+      );
     }
 
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -88,7 +93,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       .createSignedUploadUrl(storagePath);
 
     if (uploadError || !uploadData) {
-      throw new Error(uploadError?.message ?? "Failed to create signed upload URL.");
+      console.error(
+        `[${requestId}] Supabase signed upload creation failed`,
+        uploadError,
+      );
+      throw new HttpError(
+        500,
+        "Supabase signed upload creation failed. Check the storage bucket name, bucket privacy, and the server-side Supabase key.",
+      );
     }
 
     return sendJson(res, 200, {

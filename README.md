@@ -1,68 +1,44 @@
 # AI Doc Studio
 
-Security-first PDF-to-Markdown reconstruction studio built for Vercel. Users sign in with Clerk, upload PDFs directly to a private Supabase Storage bucket, and a protected Vercel Function extracts text transiently before reconstructing clean Markdown through OpenRouter.
+Security-first PDF-to-Markdown reconstruction studio built for Vercel. The landing page is public, authentication is handled with Supabase Auth magic links, and document processing remains private behind authenticated Vercel API routes.
 
-## Status
+## Highlights
 
-Production-ready after Clerk, Supabase, OpenRouter, and Vercel environment variables are configured. The app no longer uses React state as the PDF lifecycle or sends raw files to `/api/reconstruct`; the browser uses a short-lived Supabase signed upload token and the server owns extraction, rate limiting, and reconstruction.
+- Public landing page with invite-only Supabase Auth magic-link login
+- Private PDF uploads through signed Supabase Storage URLs
+- Server-side PDF extraction and OpenRouter reconstruction
+- Per-user daily rate limiting in Postgres
+- Markdown sanitization plus TXT / MD / DOCX export
+- Daily cleanup cron compatible with the Vercel Hobby plan
 
-## Features
+## Security Model
 
-- Invite-only authentication with `Clerk`.
-- Private temporary PDF storage in `Supabase Storage`.
-- Server-side PDF extraction with `pdf.js` inside Vercel Functions.
-- OpenRouter reconstruction with chunking, retries, timeout guards, and output validation.
-- Per-user daily reconstruction quota with `rate-limiter-flexible` and Supabase Postgres.
-- Markdown sanitization with `DOMPurify`, `react-markdown`, and `rehype-sanitize`.
-- Export to Markdown, TXT, and DOCX.
-- Vercel Cron cleanup for expired files and stored reconstruction content.
-
-## Security First
-
-- `CLERK_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DATABASE_URL`, and `OPENROUTER_API_KEY` are server-only.
-- API routes require `Authorization: Bearer <Clerk session token>`.
-- Document rows are scoped by `clerk_user_id`; another user cannot reconstruct someone else’s document.
-- The Supabase bucket is private and uploads use signed upload tokens.
-- PDF type, signature, size, and page count are validated before OpenRouter is called.
-- Rate limiting is per Clerk user id: `20` reconstructions per day.
-- Production rate-limiter storage fails closed with `503` if Supabase Postgres is unavailable.
-- CSP, HSTS, `nosniff`, `no-referrer`, COOP, CORP, and restrictive permissions are configured in `vercel.json`.
-- Uploaded PDFs expire after `24 hours`; cleanup marks rows expired and removes storage objects.
+- Browser users must sign in before upload or reconstruction actions are allowed.
+- API routes require `Authorization: Bearer <supabase access token>`.
+- Document ownership is tied to `auth_user_id` from Supabase Auth.
+- Uploaded PDFs live in a private `documents-temp` bucket and expire after `24 hours`.
+- The service-role key, Postgres URL, and OpenRouter key stay server-only.
+- Production rate limiting fails closed if the Postgres-backed limiter is unavailable.
 
 ## Tech Stack
 
 | Layer | Choice |
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite 6, Tailwind CSS 4 |
-| Auth | Clerk |
+| Auth | Supabase Auth magic links |
 | Database | Supabase Postgres |
-| File Storage | Private Supabase Storage bucket |
+| File Storage | Private Supabase Storage |
 | Rate Limiting | `rate-limiter-flexible` + `pg` |
 | PDF Extraction | `pdfjs-dist` |
-| Validation | `zod`, `file-type` |
-| Markdown Safety | `DOMPurify`, `react-markdown`, `rehype-sanitize` |
-| Export | `docx`, `docx-preview` |
 | Deployment | Vercel Functions + Vercel Cron |
-
-## Data Flow
-
-1. Signed-out users see Clerk sign-in and cannot access app actions.
-2. Signed-in user selects a PDF.
-3. Browser validates basic metadata and first-byte signature.
-4. Browser calls `POST /api/uploads/create` with a Clerk bearer token.
-5. Server creates a `documents` row and returns a Supabase signed upload token.
-6. Browser uploads the PDF directly to private Supabase Storage.
-7. Browser calls `POST /api/documents/reconstruct` with `{ documentId }`.
-8. Server verifies ownership, applies rate limiting, downloads the private PDF, extracts text, reconstructs Markdown, stores results, and returns content.
-9. `POST /api/maintenance/cleanup` removes expired files and marks rows as `expired`.
 
 ## API Routes
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
-| `POST /api/uploads/create` | Clerk bearer token | Create document row and signed Supabase upload token |
-| `POST /api/documents/reconstruct` | Clerk bearer token | Extract PDF text, reconstruct Markdown, persist result |
-| `POST /api/maintenance/cleanup` | `CRON_SECRET` bearer token | Delete expired storage objects and expire rows |
+| `POST /api/uploads/create` | Supabase bearer token | Create a document row and signed upload URL |
+| `POST /api/documents/reconstruct` | Supabase bearer token | Download, extract, reconstruct, and persist result |
+| `POST /api/maintenance/cleanup` | `CRON_SECRET` bearer token | Expire old files and rows |
 | `POST /api/reconstruct` | Disabled | Legacy endpoint returns `410` |
 
 ## Environment Variables
@@ -71,36 +47,33 @@ Start from [.env.example](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-
 
 | Variable | Required | Scope | Purpose |
 | --- | --- | --- | --- |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Browser | Clerk React SDK |
-| `CLERK_SECRET_KEY` | Yes | Server | Verify Clerk session tokens |
-| `VITE_SUPABASE_URL` | Yes | Browser | Supabase project URL for signed storage upload |
+| `VITE_SUPABASE_URL` | Yes | Browser | Supabase project URL for auth and signed uploads |
 | `VITE_SUPABASE_ANON_KEY` | Yes | Browser | Public Supabase anon key |
 | `VITE_SUPABASE_STORAGE_BUCKET` | Recommended | Browser | Storage bucket name, defaults to `documents-temp` |
 | `SUPABASE_URL` | Yes | Server | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server | Private database/storage admin key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server | Server-only key for auth verification, DB writes, and storage access |
 | `SUPABASE_STORAGE_BUCKET` | Recommended | Server | Storage bucket name, defaults to `documents-temp` |
 | `SUPABASE_DATABASE_URL` | Yes | Server | Postgres URL for durable rate limiting |
-| `SUPABASE_DATABASE_SSL` | Recommended | Server | Set to `true` for Supabase hosted Postgres |
-| `OPENROUTER_API_KEY` | Yes | Server | Model provider API key |
-| `APP_BASE_URL` | Yes in production | Server | Canonical origin for origin checks |
+| `SUPABASE_DATABASE_SSL` | Recommended | Server | Set to `true` for hosted Supabase Postgres |
+| `OPENROUTER_API_KEY` | Yes | Server | Reconstruction model provider key |
+| `APP_BASE_URL` | Yes in production | Server | Canonical app URL and magic-link redirect target |
 | `ALLOWED_ORIGINS` | Recommended | Server | Comma-separated origin allowlist |
-| `OPENROUTER_HTTP_REFERER` | Recommended | Server | Provider attribution header |
-| `CRON_SECRET` | Yes | Server | Protect cleanup endpoint |
+| `OPENROUTER_HTTP_REFERER` | Recommended | Server | OpenRouter attribution header |
+| `CRON_SECRET` | Yes | Server | Protect the cleanup endpoint |
 
 ## Supabase Setup
 
 1. Create a Supabase project.
-2. Run [supabase/schema.sql](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/supabase/schema.sql:1) in the SQL editor.
-3. Confirm the `documents-temp` bucket is private.
-4. Copy the project URL, anon key, service role key, and database connection string into Vercel.
-5. Do not expose the service role key or database URL with a `VITE_` prefix.
+2. Enable email auth and magic links in `Authentication`.
+3. Keep the project invite-only by inviting or pre-creating users from the Supabase dashboard or admin tooling.
+4. Add your local and production app URLs to Supabase Auth redirect URLs, with the site URL matching your main deployment.
+5. Run [supabase/schema.sql](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/supabase/schema.sql:1) in the SQL editor.
+6. Confirm the `documents-temp` bucket exists and is private.
 
-## Clerk Setup
+Important:
 
-1. Create a Clerk application.
-2. Configure sign-ups as invite-only in the Clerk dashboard.
-3. Add the production domain and local development URL to Clerk allowed origins.
-4. Set `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel.
+- The app sends magic links with `shouldCreateUser: false`, so unknown emails must not create accounts.
+- This schema is a clean auth cutover and resets the old Clerk-linked `documents` table.
 
 ## Local Development
 
@@ -110,85 +83,53 @@ cp .env.example .env
 npm run dev
 ```
 
-The Vite dev server bridges `/api/uploads/create`, `/api/documents/reconstruct`, and `/api/maintenance/cleanup` to the local API handlers.
+Recommended local values:
+
+```bash
+APP_BASE_URL="http://localhost:3000"
+ALLOWED_ORIGINS="http://localhost:3000"
+OPENROUTER_HTTP_REFERER="http://localhost:3000"
+```
+
+The Vite development server bridges the local API handlers so browser auth, uploads, and reconstruction stay same-origin during development.
 
 ## Vercel Deployment
 
-1. Import the repository into Vercel.
-2. Use the Vite framework preset.
-3. Add all required environment variables for Production and Preview as needed.
-4. Ensure `APP_BASE_URL` and `ALLOWED_ORIGINS` match the deployed origin.
-5. Deploy.
+1. Import the repository into Vercel with the `Vite` framework preset.
+2. Add all environment variables to the Production environment.
+3. Set `APP_BASE_URL` and `ALLOWED_ORIGINS` to your deployed origin.
+4. Add the same deployed origin to Supabase Auth site URL and redirect URLs.
+5. Redeploy after every environment-variable change.
 
-`vercel.json` configures function timeouts, hardened headers, CSP allowlists for Clerk/Supabase/Vercel Live, and a daily cleanup cron that stays compatible with the Vercel Hobby plan.
-
-## Project Structure
-
-```text
-.
-├── api/
-│   ├── _lib/                  # Server auth, HTTP, Supabase, PDF, rate limit helpers
-│   ├── documents/
-│   │   └── reconstruct.ts      # Authenticated extraction + reconstruction
-│   ├── maintenance/
-│   │   └── cleanup.ts          # Cron cleanup endpoint
-│   ├── uploads/
-│   │   └── create.ts           # Signed upload creation
-│   └── reconstruct.ts          # Disabled legacy endpoint
-├── src/
-│   ├── components/             # Upload, processing, landing, editor UI
-│   ├── lib/                    # Browser API client, sanitizer, schemas, exports
-│   ├── App.tsx
-│   └── main.tsx
-├── supabase/
-│   └── schema.sql              # Database, bucket, and rate limiter bootstrap
-├── vercel.json
-└── vite.config.ts
-```
-
-## Scripts
-
-```bash
-npm run dev
-npm run lint
-npm run build
-npm run check
-npm run security:audit
-npm run preview
-```
-
-## Operational Limits
-
-- Maximum PDF size: `15 MB`
-- Maximum PDF pages: `40`
-- Maximum extracted text: `200,000` characters
-- Maximum reconstructed output: `250,000` characters
-- Temporary retention: `24 hours`
-- Rate limit: `20` reconstructions per Clerk user per day
+`vercel.json` keeps the CSP aligned with Supabase and uses a daily cleanup cron so Hobby deployments stay valid.
 
 ## Verification
 
+Run:
+
 ```bash
 npm run check
 npm run security:audit
 ```
 
-Recommended manual checks:
+Manual checks:
 
-- Signed-out user cannot reach upload actions.
-- API calls without a Clerk bearer token return `401`.
-- A valid PDF uploads to the private Supabase bucket and creates a `documents` row.
-- A different Clerk user cannot reconstruct the document.
-- Invalid PDF signatures and oversized files are rejected before OpenRouter.
-- User receives `429` after the daily reconstruction quota.
-- Cleanup removes expired storage objects and marks rows `expired`.
+- Signed-out visitors can view the landing page.
+- The landing login button opens the magic-link modal.
+- Signed-out landing CTA opens login, then returns the user to upload after successful auth.
+- Unknown / non-invited emails do not gain access.
+- `POST /api/uploads/create` returns `401` without a valid Supabase bearer token.
+- Authenticated users can upload, reconstruct, and reopen the editor.
+- Different authenticated users cannot reconstruct each other’s documents.
 
-## Known Limitations
+## Operational Limits
 
-- Scanned image PDFs are not OCR processed.
-- Very complex layouts may still need manual editing after reconstruction.
-- Vercel Function duration and OpenRouter model latency can still limit very large documents.
+- PDF size: `15 MB`
+- PDF pages: `40`
+- Extracted text: `200,000` characters
+- Reconstruction limit: `20` jobs per authenticated user per day
+- File retention: `24 hours`
 
 ## License
 
-No license file is included yet. Add a license before publishing as a public open-source project.
+No license file is included yet. Add one before publishing publicly.

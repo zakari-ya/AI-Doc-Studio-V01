@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { secureMarkdown } from "./sanitizer";
 import { APIErrorSchema, AIOutputSchema } from "./schemas";
-import { getSupabaseBrowserClient } from "./supabase";
+import { getSupabaseBrowserClient, SUPABASE_STORAGE_BUCKET } from "./supabase";
 
 const CLIENT_REQUEST_TIMEOUT_MS = 240_000;
 
@@ -22,8 +22,6 @@ const ReconstructResponseSchema = AIOutputSchema.extend({
   documentId: z.string().uuid(),
   originalText: z.string().min(1),
 });
-
-type ClerkTokenGetter = () => Promise<string | null>;
 
 async function readJsonResponse(response: Response) {
   const responseText = await response.text().catch(() => "");
@@ -87,20 +85,27 @@ async function fetchJsonWithAuth(
   }
 }
 
-async function getRequiredClerkToken(getToken: ClerkTokenGetter) {
-  const token = await getToken();
+async function getRequiredAccessToken() {
+  const supabase = getSupabaseBrowserClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    throw new Error("Authentication session could not be loaded.");
+  }
+
+  const token = session?.access_token;
   if (!token) {
-    throw new Error("Authentication expired. Sign in again before uploading.");
+    throw new Error("Authentication required. Sign in with your magic link to continue.");
   }
 
   return token;
 }
 
-export async function processDocumentWithStorage(
-  file: File,
-  getToken: ClerkTokenGetter,
-) {
-  const token = await getRequiredClerkToken(getToken);
+export async function processDocumentWithStorage(file: File) {
+  const token = await getRequiredAccessToken();
   const uploadResponse = await fetchJsonWithAuth("/api/uploads/create", token, {
     fileName: file.name,
     fileSize: file.size,
@@ -115,7 +120,7 @@ export async function processDocumentWithStorage(
   const supabase = getSupabaseBrowserClient();
   const { signedUpload } = uploadValidation.data;
   const { error: uploadError } = await supabase.storage
-    .from(import.meta.env.VITE_SUPABASE_STORAGE_BUCKET || "documents-temp")
+    .from(SUPABASE_STORAGE_BUCKET)
     .uploadToSignedUrl(signedUpload.path, signedUpload.token, file, {
       contentType: "application/pdf",
       upsert: false,

@@ -1,3 +1,5 @@
+import { HttpError } from "./http";
+
 export const MAX_RAW_TEXT_CHARS = 200_000;
 export const MAX_OUTPUT_CHARS = 250_000;
 export const MAX_PDF_FILE_SIZE_BYTES = 15 * 1024 * 1024;
@@ -10,7 +12,7 @@ export const SUPABASE_STORAGE_BUCKET =
 export function requireEnv(name: string) {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`${name} is not configured.`);
+    throw new HttpError(500, `${name} is not configured.`);
   }
   return value;
 }

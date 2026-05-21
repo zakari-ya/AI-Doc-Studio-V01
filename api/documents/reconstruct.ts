@@ -84,7 +84,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       .from("documents")
       .select("*")
       .eq("id", validation.data.documentId)
-      .eq("clerk_user_id", auth.userId)
+      .eq("auth_user_id", auth.userId)
       .single<DocumentRow>();
 
     if (documentError || !document) {
