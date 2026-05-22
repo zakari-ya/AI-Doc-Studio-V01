@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import type { RealtimeClientOptions } from "@supabase/realtime-js";
+import WebSocket from "ws";
 import { requireEnv } from "./config.js";
+
+const realtimeTransport =
+  WebSocket as unknown as NonNullable<RealtimeClientOptions["transport"]>;
 
 export type DocumentStatus =
   | "uploading"
@@ -35,6 +40,9 @@ export function getSupabaseAdmin() {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
+      },
+      realtime: {
+        transport: realtimeTransport,
       },
     },
   );
