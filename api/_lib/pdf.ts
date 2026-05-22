@@ -8,9 +8,45 @@ import { HttpError } from "./http.js";
 
 let pdfJsPromise: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null =
   null;
+let nodeCanvasPolyfillsPromise: Promise<void> | null = null;
+
+async function ensurePdfJsNodeGlobals() {
+  nodeCanvasPolyfillsPromise ??= (async () => {
+    if (globalThis.DOMMatrix && globalThis.ImageData && globalThis.Path2D) {
+      return;
+    }
+
+    try {
+      const canvas = await import("@napi-rs/canvas");
+      globalThis.DOMMatrix ??=
+        canvas.DOMMatrix as unknown as typeof globalThis.DOMMatrix;
+      globalThis.ImageData ??=
+        canvas.ImageData as unknown as typeof globalThis.ImageData;
+      globalThis.Path2D ??=
+        canvas.Path2D as unknown as typeof globalThis.Path2D;
+    } catch (error) {
+      throw new Error(
+        `Failed to load required PDF canvas polyfills: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    if (!globalThis.DOMMatrix || !globalThis.ImageData || !globalThis.Path2D) {
+      throw new Error(
+        "PDF canvas polyfills could not be initialized for DOMMatrix, ImageData, or Path2D.",
+      );
+    }
+  })();
+
+  return nodeCanvasPolyfillsPromise;
+}
 
 async function loadPdfJs() {
-  pdfJsPromise ??= import("pdfjs-dist/legacy/build/pdf.mjs");
+  pdfJsPromise ??= (async () => {
+    await ensurePdfJsNodeGlobals();
+    return import("pdfjs-dist/legacy/build/pdf.mjs");
+  })();
   return pdfJsPromise;
 }
 
