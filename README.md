@@ -18,7 +18,7 @@ Security-first PDF-to-Markdown reconstruction studio built for Vercel. The landi
 - Document ownership is tied to `auth_user_id` from Supabase Auth.
 - Uploaded PDFs live in a private `documents-temp` bucket and expire after `24 hours`.
 - The service-role key, Postgres URL, and OpenRouter key stay server-only.
-- Production rate limiting fails closed if the Postgres-backed limiter is unavailable.
+- Production rate limiting uses Postgres when available and falls back to the `documents` table if the dedicated limiter store is unavailable.
 
 ## Tech Stack
 
@@ -53,7 +53,7 @@ Start from [.env.example](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-
 | `SUPABASE_URL` | Yes | Server | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server | Server-only key for auth verification, DB writes, and storage access |
 | `SUPABASE_STORAGE_BUCKET` | Recommended | Server | Storage bucket name, defaults to `documents-temp` |
-| `SUPABASE_DATABASE_URL` | Yes | Server | Postgres URL for durable rate limiting |
+| `SUPABASE_DATABASE_URL` | Recommended | Server | Postgres URL for the primary rate-limiter store |
 | `SUPABASE_DATABASE_SSL` | Recommended | Server | Set to `true` for hosted Supabase Postgres |
 | `OPENROUTER_API_KEY` | Yes | Server | Reconstruction model provider key |
 | `APP_BASE_URL` | Yes in production | Server | Canonical app URL and magic-link redirect target |
