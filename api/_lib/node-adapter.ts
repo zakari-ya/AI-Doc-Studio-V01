@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { sendJson } from "./http";
 
 type WebHandler = (request: Request) => Response | Promise<Response>;
+type NodeBodyInit = Exclude<BodyInit, ReadableStream> | undefined;
 
 type NodeRequestWithBody = IncomingMessage & {
   body?: unknown;
@@ -56,6 +57,10 @@ async function readNodeBody(req: NodeRequestWithBody) {
   return body.length > 0 ? body : undefined;
 }
 
+function isWebRequest(value: unknown): value is Request {
+  return typeof Request !== "undefined" && value instanceof Request;
+}
+
 function getHeaders(req: IncomingMessage) {
   const headers = new Headers();
 
@@ -81,29 +86,62 @@ async function writeWebResponse(res: ServerResponse, response: Response) {
   res.end(Buffer.from(await response.arrayBuffer()));
 }
 
+function writeNodeJson(
+  res: ServerResponse,
+  statusCode: number,
+  body: Record<string, unknown>,
+) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(JSON.stringify(body));
+}
+
 export function createNodeHandler(webHandler: WebHandler) {
   return async function vercelHandler(
     req: Request | NodeRequestWithBody,
     res?: ServerResponse,
   ) {
-    if (req instanceof Request || !res) {
-      return webHandler(req as Request);
-    }
-
     try {
-      const request = new Request(getRequestUrl(req), {
+      if (isWebRequest(req) || !res) {
+        return webHandler(req as Request);
+      }
+
+      if (
+        typeof Request === "undefined" ||
+        typeof Response === "undefined" ||
+        typeof Headers === "undefined"
+      ) {
+        writeNodeJson(res, 500, {
+          error:
+            "This runtime is missing Web Request/Response APIs. Set the Vercel Node.js version to 20.x or newer.",
+        });
+        return;
+      }
+
+      const body = await readNodeBody(req) as NodeBodyInit;
+      const requestInit: RequestInit = {
         method: req.method ?? "GET",
         headers: getHeaders(req),
-        body: await readNodeBody(req),
+      };
+
+      if (body !== undefined) {
+        requestInit.body = body;
+      }
+
+      const request = new Request(getRequestUrl(req), {
+        ...requestInit,
       });
 
       await writeWebResponse(res, await webHandler(request));
     } catch (error) {
       console.error("[node-adapter] Unhandled adapter error", error);
-      await writeWebResponse(
-        res,
-        sendJson(500, { error: "Unexpected server error." }),
-      );
+      if (res) {
+        writeNodeJson(res, 500, { error: "Unexpected server error." });
+        return;
+      }
+
+      return sendJson(500, { error: "Unexpected server error." });
     }
   };
 }

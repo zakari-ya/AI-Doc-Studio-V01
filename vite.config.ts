@@ -12,12 +12,23 @@ type DevRequest = IncomingMessage & {
   originalUrl?: string;
 };
 
+type HttpMethod =
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "DELETE"
+  | "OPTIONS"
+  | "HEAD";
+
 type RouteModule = Partial<
-  Record<
-    "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD",
-    (request: Request) => Response | Promise<Response>
-  >
->;
+  Record<HttpMethod, (request: Request) => Response | Promise<Response>>
+> & {
+  default?: (
+    request: IncomingMessage,
+    response: ServerResponse,
+  ) => Response | Promise<Response> | void | Promise<void>;
+};
 
 async function readNodeRequestBody(req: IncomingMessage) {
   const chunks: Buffer[] = [];
@@ -29,13 +40,41 @@ async function readNodeRequestBody(req: IncomingMessage) {
   return Buffer.concat(chunks);
 }
 
+function toRouteModule(module: RouteModule): RouteModule {
+  return module;
+}
+
 function createDevApiPlugin(): Plugin {
-  const handlers = new Map<string, RouteModule>([
-    ["/api/uploads/create", createUploadHandler],
-    ["/api/documents/reconstruct", reconstructHandler],
-    ["/api/maintenance/cleanup", cleanupHandler],
-    ["/api/reconstruct", legacyReconstructHandler],
-  ]);
+  const handlers = new Map<string, RouteModule>();
+
+  handlers.set(
+    "/api/uploads/create",
+    toRouteModule({
+      POST: createUploadHandler.POST,
+      default: createUploadHandler.default,
+    }),
+  );
+  handlers.set(
+    "/api/documents/reconstruct",
+    toRouteModule({
+      POST: reconstructHandler.POST,
+      default: reconstructHandler.default,
+    }),
+  );
+  handlers.set(
+    "/api/maintenance/cleanup",
+    toRouteModule({
+      POST: cleanupHandler.POST,
+      default: cleanupHandler.default,
+    }),
+  );
+  handlers.set(
+    "/api/reconstruct",
+    toRouteModule({
+      POST: legacyReconstructHandler.POST,
+      default: legacyReconstructHandler.default,
+    }),
+  );
 
   return {
     name: "local-secure-api",
@@ -51,10 +90,11 @@ function createDevApiPlugin(): Plugin {
           return;
         }
 
-        const method = (request.method ?? "GET").toUpperCase() as keyof RouteModule;
+        const method = (request.method ?? "GET").toUpperCase() as HttpMethod;
         const handler = routeModule[method];
+        const defaultHandler = routeModule.default;
 
-        if (!handler) {
+        if (!handler && !defaultHandler) {
           res.statusCode = 405;
           res.setHeader("Allow", Object.keys(routeModule).join(", "));
           res.end(JSON.stringify({ error: "Method not allowed." }));
@@ -62,6 +102,21 @@ function createDevApiPlugin(): Plugin {
         }
 
         try {
+          if (defaultHandler) {
+            const result = await defaultHandler(request, res);
+            if (result instanceof Response && !res.writableEnded) {
+              await writeWebResponse(res, result);
+            }
+            return;
+          }
+
+          if (!handler) {
+            res.statusCode = 405;
+            res.setHeader("Allow", Object.keys(routeModule).join(", "));
+            res.end(JSON.stringify({ error: "Method not allowed." }));
+            return;
+          }
+
           const headers = new Headers();
           for (const [key, value] of Object.entries(request.headers)) {
             if (Array.isArray(value)) {
