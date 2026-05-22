@@ -2,8 +2,8 @@ import { createRequire } from "node:module";
 import { Pool } from "pg";
 import {
   DAILY_RECONSTRUCTION_LIMIT,
-} from "./config";
-import { HttpError } from "./http";
+} from "./config.js";
+import { HttpError } from "./http.js";
 
 const require = createRequire(import.meta.url);
 const {

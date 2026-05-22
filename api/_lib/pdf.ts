@@ -3,8 +3,8 @@ import {
   MAX_PDF_FILE_SIZE_BYTES,
   MAX_PDF_PAGE_COUNT,
   MAX_RAW_TEXT_CHARS,
-} from "./config";
-import { HttpError } from "./http";
+} from "./config.js";
+import { HttpError } from "./http.js";
 
 let pdfJsPromise: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null =
   null;

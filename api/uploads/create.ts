@@ -4,9 +4,9 @@ import {
   DOCUMENT_RETENTION_HOURS,
   MAX_PDF_FILE_SIZE_BYTES,
   SUPABASE_STORAGE_BUCKET,
-} from "../_lib/config";
-import { requireAuth } from "../_lib/auth";
-import { createNodeHandler } from "../_lib/node-adapter";
+} from "../_lib/config.js";
+import { requireAuth } from "../_lib/auth.js";
+import { createNodeHandler } from "../_lib/node-adapter.js";
 import {
   createBaseHeaders,
   enforceBodySize,
@@ -19,8 +19,8 @@ import {
   type ApiRequest,
   readJsonBody,
   sendJson,
-} from "../_lib/http";
-import { getSupabaseAdmin } from "../_lib/supabase";
+} from "../_lib/http.js";
+import { getSupabaseAdmin } from "../_lib/supabase.js";
 
 const MAX_BODY_BYTES = 20_000;
 const ROUTE = "/api/uploads/create";

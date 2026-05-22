@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { requireAuth } from "../_lib/auth";
-import { SUPABASE_STORAGE_BUCKET } from "../_lib/config";
+import { requireAuth } from "../_lib/auth.js";
+import { SUPABASE_STORAGE_BUCKET } from "../_lib/config.js";
 import {
   createBaseHeaders,
   enforceBodySize,
@@ -15,12 +15,12 @@ import {
   type ApiRequest,
   readJsonBody,
   sendJson,
-} from "../_lib/http";
-import { createNodeHandler } from "../_lib/node-adapter";
-import { extractTextFromPdfBuffer } from "../_lib/pdf";
-import { reconstructText } from "../_lib/reconstruction";
-import { enforceUserRateLimit } from "../_lib/rate-limit";
-import { type DocumentRow, getSupabaseAdmin } from "../_lib/supabase";
+} from "../_lib/http.js";
+import { createNodeHandler } from "../_lib/node-adapter.js";
+import { extractTextFromPdfBuffer } from "../_lib/pdf.js";
+import { reconstructText } from "../_lib/reconstruction.js";
+import { enforceUserRateLimit } from "../_lib/rate-limit.js";
+import { type DocumentRow, getSupabaseAdmin } from "../_lib/supabase.js";
 
 const MAX_BODY_BYTES = 20_000;
 const ROUTE = "/api/documents/reconstruct";

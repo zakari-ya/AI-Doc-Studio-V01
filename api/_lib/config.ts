@@ -1,4 +1,4 @@
-import { HttpError } from "./http";
+import { HttpError } from "./http.js";
 
 export const MAX_RAW_TEXT_CHARS = 200_000;
 export const MAX_OUTPUT_CHARS = 250_000;

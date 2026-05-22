@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { sendJson } from "./http";
+import { sendJson } from "./http.js";
 
 type WebHandler = (request: Request) => Response | Promise<Response>;
 type NodeBodyInit = Exclude<BodyInit, ReadableStream> | undefined;

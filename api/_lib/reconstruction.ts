@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { MAX_OUTPUT_CHARS } from "./config";
-import { HttpError } from "./http";
+import { MAX_OUTPUT_CHARS } from "./config.js";
+import { HttpError } from "./http.js";
 
 const PROVIDER_TIMEOUT_MS = 150_000;
 const DEFAULT_CHUNK_MAX_CHARS = 45_000;

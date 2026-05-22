@@ -7,9 +7,9 @@ import {
   type ApiRequest,
   sendJson,
   getHeaderValue,
-} from "../_lib/http";
-import { createNodeHandler } from "../_lib/node-adapter";
-import { getSupabaseAdmin, type DocumentRow } from "../_lib/supabase";
+} from "../_lib/http.js";
+import { createNodeHandler } from "../_lib/node-adapter.js";
+import { getSupabaseAdmin, type DocumentRow } from "../_lib/supabase.js";
 
 function requireCronAuth(req: ApiRequest) {
   const secret = process.env.CRON_SECRET;

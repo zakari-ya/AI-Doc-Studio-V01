@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { requireEnv } from "./config";
+import { requireEnv } from "./config.js";
 
 export type DocumentStatus =
   | "uploading"

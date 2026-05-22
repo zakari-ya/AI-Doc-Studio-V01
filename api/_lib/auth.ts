@@ -1,6 +1,6 @@
-import type { ApiRequest } from "./http";
-import { getSupabaseAdmin } from "./supabase";
-import { getHeaderValue, HttpError } from "./http";
+import type { ApiRequest } from "./http.js";
+import { getSupabaseAdmin } from "./supabase.js";
+import { getHeaderValue, HttpError } from "./http.js";
 
 export type AuthContext = {
   userId: string;

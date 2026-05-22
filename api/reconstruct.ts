@@ -3,8 +3,8 @@ import {
   type ApiRequest,
   createBaseHeaders,
   sendJson,
-} from "./_lib/http";
-import { createNodeHandler } from "./_lib/node-adapter";
+} from "./_lib/http.js";
+import { createNodeHandler } from "./_lib/node-adapter.js";
 
 export async function POST(_req: ApiRequest) {
   const requestId = randomUUID();
