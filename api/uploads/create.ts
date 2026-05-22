@@ -15,6 +15,7 @@ import {
   enforceOrigin,
   handleApiError,
   HttpError,
+  logApiEvent,
   type ApiRequest,
   readJsonBody,
   sendJson,
@@ -22,6 +23,7 @@ import {
 import { getSupabaseAdmin } from "../_lib/supabase";
 
 const MAX_BODY_BYTES = 20_000;
+const ROUTE = "/api/uploads/create";
 
 const CreateUploadSchema = z.object({
   fileName: z.string().min(1).max(180),
@@ -42,14 +44,27 @@ function sanitizeFileName(fileName: string) {
 
 export async function POST(req: ApiRequest) {
   const requestId = randomUUID();
+  let stage = "start";
 
   try {
+    logApiEvent(ROUTE, requestId, stage, {
+      method: req.method,
+      vercelEnv: process.env.VERCEL_ENV,
+      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+      hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      storageBucket: SUPABASE_STORAGE_BUCKET,
+    });
+
+    stage = "validate-request";
     enforceMethod(req);
     enforceOrigin(req);
     enforceJsonRequest(req);
     enforceBodySize(req, MAX_BODY_BYTES);
 
+    stage = "auth";
     const auth = await requireAuth(req);
+
+    stage = "parse-body";
     const body = await readJsonBody(req, MAX_BODY_BYTES);
     const validation = CreateUploadSchema.safeParse(body);
 
@@ -63,6 +78,7 @@ export async function POST(req: ApiRequest) {
       );
     }
 
+    stage = "create-document-row";
     const supabase = getSupabaseAdmin();
     const documentId = randomUUID();
     const safeFileName = sanitizeFileName(validation.data.fileName);
@@ -84,27 +100,38 @@ export async function POST(req: ApiRequest) {
     });
 
     if (insertError) {
-      console.error(`[${requestId}] Supabase documents insert failed`, insertError);
+      logApiEvent(ROUTE, requestId, "supabase-insert-error", {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+      });
       throw new HttpError(
         500,
         "Supabase documents table write failed. Check the `documents` table schema and the server-side Supabase key.",
       );
     }
 
+    stage = "create-signed-upload-url";
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .createSignedUploadUrl(storagePath);
 
     if (uploadError || !uploadData) {
-      console.error(
-        `[${requestId}] Supabase signed upload creation failed`,
-        uploadError,
-      );
+      logApiEvent(ROUTE, requestId, "supabase-signed-upload-error", {
+        message: uploadError?.message,
+        name: uploadError?.name,
+      });
       throw new HttpError(
         500,
         "Supabase signed upload creation failed. Check the storage bucket name, bucket privacy, and the server-side Supabase key.",
       );
     }
+
+    stage = "success";
+    logApiEvent(ROUTE, requestId, stage, {
+      documentId,
+      sizeBytes: validation.data.fileSize,
+    });
 
     return sendJson(
       200,
@@ -117,7 +144,7 @@ export async function POST(req: ApiRequest) {
       createBaseHeaders(requestId),
     );
   } catch (error) {
-    return handleApiError(error, requestId);
+    return handleApiError(error, requestId, ROUTE, stage);
   }
 }
 

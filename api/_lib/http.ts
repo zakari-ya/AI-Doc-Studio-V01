@@ -16,6 +16,62 @@ export class HttpError extends Error {
   }
 }
 
+type ApiLogDetails = Record<string, boolean | number | string | null | undefined>;
+
+function sanitizeLogDetails(details: ApiLogDetails) {
+  return Object.fromEntries(
+    Object.entries(details).filter(([, value]) => value !== undefined),
+  );
+}
+
+export function logApiEvent(
+  route: string,
+  requestId: string,
+  stage: string,
+  details: ApiLogDetails = {},
+) {
+  console.info(
+    JSON.stringify({
+      level: "info",
+      route,
+      requestId,
+      stage,
+      ...sanitizeLogDetails(details),
+    }),
+  );
+}
+
+export function logApiError(
+  route: string,
+  requestId: string,
+  stage: string,
+  error: unknown,
+  details: ApiLogDetails = {},
+) {
+  const errorDetails =
+    error instanceof Error
+      ? {
+          errorName: error.name,
+          errorMessage: error.message,
+          errorStack: error.stack,
+        }
+      : {
+          errorName: "UnknownError",
+          errorMessage: String(error),
+        };
+
+  console.error(
+    JSON.stringify({
+      level: "error",
+      route,
+      requestId,
+      stage,
+      ...sanitizeLogDetails(details),
+      ...errorDetails,
+    }),
+  );
+}
+
 export function createBaseHeaders(
   requestId: string,
   headers: HeadersInit = {},
@@ -193,7 +249,12 @@ export async function readJsonBody(
   }
 }
 
-export function handleApiError(error: unknown, requestId: string) {
+export function handleApiError(
+  error: unknown,
+  requestId: string,
+  route = "unknown",
+  stage = "unhandled",
+) {
   const httpError =
     error instanceof HttpError
       ? error
@@ -204,13 +265,20 @@ export function handleApiError(error: unknown, requestId: string) {
             : `Unexpected server error: ${error.message}`,
         );
 
-  if (!(error instanceof HttpError)) {
-    console.error(`[${requestId}] Unhandled API error`, error);
-  }
+  logApiError(route, requestId, stage, error, {
+    statusCode: httpError.statusCode,
+    publicMessage: httpError.message,
+  });
 
   return sendJson(
     httpError.statusCode,
-    { error: httpError.message },
+    {
+      error: httpError.message,
+      requestId,
+      statusCode: httpError.statusCode,
+      route,
+      stage,
+    },
     createBaseHeaders(requestId, httpError.headers),
   );
 }

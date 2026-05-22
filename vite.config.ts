@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import * as reconstructHandler from "./api/documents/reconstruct";
+import * as runtimeDebugHandler from "./api/debug/runtime";
 import * as cleanupHandler from "./api/maintenance/cleanup";
 import * as createUploadHandler from "./api/uploads/create";
 import * as legacyReconstructHandler from "./api/reconstruct";
@@ -73,6 +74,12 @@ function createDevApiPlugin(): Plugin {
     toRouteModule({
       POST: legacyReconstructHandler.POST,
       default: legacyReconstructHandler.default,
+    }),
+  );
+  handlers.set(
+    "/api/debug/runtime",
+    toRouteModule({
+      default: runtimeDebugHandler.default,
     }),
   );
 

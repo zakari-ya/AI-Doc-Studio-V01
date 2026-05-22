@@ -26,24 +26,42 @@ const ReconstructResponseSchema = AIOutputSchema.extend({
 async function readJsonResponse(response: Response) {
   const responseText = await response.text().catch(() => "");
   if (!responseText) {
-    return null;
+    return { parsed: null, raw: "" };
   }
 
   try {
-    return JSON.parse(responseText) as unknown;
+    return { parsed: JSON.parse(responseText) as unknown, raw: responseText };
   } catch {
-    return null;
+    return { parsed: null, raw: responseText };
   }
 }
 
-function buildApiError(response: Response, body: unknown) {
+function buildApiError(response: Response, body: unknown, rawBody: string) {
   const requestId = response.headers.get("x-request-id");
   const parsed = APIErrorSchema.safeParse(body);
+  const responseRequestId = parsed.success ? parsed.data.requestId : undefined;
+  const debugRequestId = requestId ?? responseRequestId;
+  const fallbackBody = rawBody.trim().slice(0, 500);
   const message = parsed.success
     ? parsed.data.error
-    : `Request failed with HTTP ${response.status}.`;
+    : fallbackBody
+      ? `Request failed with HTTP ${response.status}: ${fallbackBody}`
+      : `Request failed with HTTP ${response.status}.`;
 
-  return new Error(requestId ? `${message} (request id: ${requestId})` : message);
+  console.error("[api] request failed", {
+    url: response.url,
+    status: response.status,
+    statusText: response.statusText,
+    requestId: debugRequestId,
+    route: parsed.success ? parsed.data.route : undefined,
+    stage: parsed.success ? parsed.data.stage : undefined,
+    body,
+    rawBody: fallbackBody || undefined,
+  });
+
+  return new Error(
+    debugRequestId ? `${message} (request id: ${debugRequestId})` : message,
+  );
 }
 
 async function fetchJsonWithAuth(
@@ -68,9 +86,9 @@ async function fetchJsonWithAuth(
       signal: controller.signal,
     });
 
-    const responseBody = await readJsonResponse(response);
+    const { parsed: responseBody, raw: rawBody } = await readJsonResponse(response);
     if (!response.ok) {
-      throw buildApiError(response, responseBody);
+      throw buildApiError(response, responseBody, rawBody);
     }
 
     return responseBody;
@@ -106,6 +124,12 @@ async function getRequiredAccessToken() {
 
 export async function processDocumentWithStorage(file: File) {
   const token = await getRequiredAccessToken();
+  console.info("[pipeline] creating signed upload", {
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type || "application/pdf",
+  });
+
   const uploadResponse = await fetchJsonWithAuth("/api/uploads/create", token, {
     fileName: file.name,
     fileSize: file.size,
@@ -114,11 +138,20 @@ export async function processDocumentWithStorage(file: File) {
 
   const uploadValidation = CreateUploadResponseSchema.safeParse(uploadResponse);
   if (!uploadValidation.success) {
+    console.error("[pipeline] invalid create-upload response", {
+      issues: uploadValidation.error.issues,
+      response: uploadResponse,
+    });
     throw new Error("Upload Security Error: invalid signed upload response.");
   }
 
   const supabase = getSupabaseBrowserClient();
   const { signedUpload } = uploadValidation.data;
+  console.info("[pipeline] uploading PDF to Supabase Storage", {
+    documentId: uploadValidation.data.documentId,
+    storagePath: uploadValidation.data.storagePath,
+  });
+
   const { error: uploadError } = await supabase.storage
     .from(SUPABASE_STORAGE_BUCKET)
     .uploadToSignedUrl(signedUpload.path, signedUpload.token, file, {
@@ -127,8 +160,13 @@ export async function processDocumentWithStorage(file: File) {
     });
 
   if (uploadError) {
+    console.error("[pipeline] Supabase signed upload failed", uploadError);
     throw new Error(`Upload failed: ${uploadError.message}`);
   }
+
+  console.info("[pipeline] requesting reconstruction", {
+    documentId: uploadValidation.data.documentId,
+  });
 
   const reconstructResponse = await fetchJsonWithAuth(
     "/api/documents/reconstruct",
@@ -139,6 +177,10 @@ export async function processDocumentWithStorage(file: File) {
   const reconstructValidation =
     ReconstructResponseSchema.safeParse(reconstructResponse);
   if (!reconstructValidation.success) {
+    console.error("[pipeline] invalid reconstruction response", {
+      issues: reconstructValidation.error.issues,
+      response: reconstructResponse,
+    });
     throw new Error("Output Security Error: invalid reconstruction response.");
   }
 

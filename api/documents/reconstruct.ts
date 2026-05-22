@@ -11,6 +11,7 @@ import {
   getHeaderValue,
   handleApiError,
   HttpError,
+  logApiEvent,
   type ApiRequest,
   readJsonBody,
   sendJson,
@@ -22,6 +23,7 @@ import { enforceUserRateLimit } from "../_lib/rate-limit";
 import { type DocumentRow, getSupabaseAdmin } from "../_lib/supabase";
 
 const MAX_BODY_BYTES = 20_000;
+const ROUTE = "/api/documents/reconstruct";
 
 const ReconstructDocumentSchema = z.object({
   documentId: z.string().uuid(),
@@ -61,14 +63,28 @@ async function markFailed(
 
 export async function POST(req: ApiRequest) {
   const requestId = randomUUID();
+  let stage = "start";
 
   try {
+    logApiEvent(ROUTE, requestId, stage, {
+      method: req.method,
+      vercelEnv: process.env.VERCEL_ENV,
+      hasOpenRouterKey: Boolean(process.env.OPENROUTER_API_KEY),
+      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+      hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      hasSupabaseDatabaseUrl: Boolean(process.env.SUPABASE_DATABASE_URL),
+    });
+
+    stage = "validate-request";
     enforceMethod(req);
     enforceOrigin(req);
     enforceJsonRequest(req);
     enforceBodySize(req, MAX_BODY_BYTES);
 
+    stage = "auth";
     const auth = await requireAuth(req);
+
+    stage = "parse-body";
     const body = await readJsonBody(req, MAX_BODY_BYTES);
     const validation = ReconstructDocumentSchema.safeParse(body);
 
@@ -83,6 +99,7 @@ export async function POST(req: ApiRequest) {
       );
     }
 
+    stage = "load-document";
     const supabase = getSupabaseAdmin();
     const { data: document, error: documentError } = await supabase
       .from("documents")
@@ -92,6 +109,11 @@ export async function POST(req: ApiRequest) {
       .single<DocumentRow>();
 
     if (documentError || !document) {
+      logApiEvent(ROUTE, requestId, "document-load-error", {
+        documentId: validation.data.documentId,
+        message: documentError?.message,
+        code: documentError?.code,
+      });
       throw new HttpError(404, "Document not found.");
     }
 
@@ -99,8 +121,10 @@ export async function POST(req: ApiRequest) {
       throw new HttpError(410, "Document has expired.");
     }
 
+    stage = "rate-limit";
     await enforceUserRateLimit(auth.userId);
 
+    stage = "mark-processing";
     await supabase
       .from("documents")
       .update({
@@ -111,6 +135,7 @@ export async function POST(req: ApiRequest) {
       .eq("id", document.id);
 
     try {
+      stage = "download-pdf";
       const { data: storedFile, error: downloadError } = await supabase.storage
         .from(document.storage_bucket || SUPABASE_STORAGE_BUCKET)
         .download(document.storage_path);
@@ -122,13 +147,17 @@ export async function POST(req: ApiRequest) {
         );
       }
 
+      stage = "extract-pdf";
       const fileBuffer = Buffer.from(await storedFile.arrayBuffer());
       const extractedText = await extractTextFromPdfBuffer(fileBuffer);
+
+      stage = "openrouter-reconstruct";
       const reconstructedMarkdown = await reconstructText(
         extractedText,
         getProviderReferer(req),
       );
 
+      stage = "store-result";
       const { error: updateError } = await supabase
         .from("documents")
         .update({
@@ -144,6 +173,13 @@ export async function POST(req: ApiRequest) {
         throw new Error(updateError.message);
       }
 
+      stage = "success";
+      logApiEvent(ROUTE, requestId, stage, {
+        documentId: document.id,
+        extractedChars: extractedText.length,
+        outputChars: reconstructedMarkdown.length,
+      });
+
       return sendJson(
         200,
         {
@@ -158,11 +194,16 @@ export async function POST(req: ApiRequest) {
         processingError instanceof Error
           ? processingError.message
           : "Document processing failed.";
+      logApiEvent(ROUTE, requestId, "processing-error", {
+        documentId: document.id,
+        stage,
+        message,
+      });
       await markFailed(supabase, document.id, message);
       throw processingError;
     }
   } catch (error) {
-    return handleApiError(error, requestId);
+    return handleApiError(error, requestId, ROUTE, stage);
   }
 }
 

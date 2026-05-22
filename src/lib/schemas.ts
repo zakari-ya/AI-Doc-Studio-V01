@@ -63,6 +63,10 @@ export const AIOutputSchema = z.object({
  */
 export const APIErrorSchema = z.object({
   error: z.string().min(1, "API error message is required"),
+  requestId: z.string().optional(),
+  statusCode: z.number().optional(),
+  route: z.string().optional(),
+  stage: z.string().optional(),
 });
 
 export type AIReconstructionRequest = z.infer<typeof AIReconstructionSchema>;
