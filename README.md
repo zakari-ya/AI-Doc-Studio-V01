@@ -1,4 +1,3 @@
-o + Title Section -->
 <div align="center">
   <img src="public/favicone.png" alt="AI Doc Studio Logo" width="200" />
 
