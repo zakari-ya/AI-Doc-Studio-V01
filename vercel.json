@@ -16,6 +16,16 @@
       "schedule": "0 3 * * *"
     }
   ],
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "/"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "/"
+    }
+  ],
   "headers": [
     {
       "source": "/service-worker.js",
