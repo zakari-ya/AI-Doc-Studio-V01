@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -11,7 +11,6 @@ import {
   Network,
   Server,
   ShieldCheck,
-  TerminalSquare,
   X,
 } from "lucide-react";
 
@@ -71,30 +70,31 @@ function SectionShell({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-b border-white/6 pb-12 md:pb-16">
-      <div className="space-y-5">
-        <div className="space-y-3">
-          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
+    <section id={id} className="scroll-mt-28 pb-14 md:pb-18">
+      <div className="space-y-4">
+        <div className="space-y-2.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.28em] text-zinc-500">
             {eyebrow}
           </span>
-          <div className="space-y-4">
-            <h2 className="text-3xl md:text-4xl font-light tracking-tight text-white">
+          <div className="space-y-3">
+            <h2 className="text-3xl md:text-[2.15rem] font-light tracking-[-0.03em] text-white">
               {title}
             </h2>
-            <p className="max-w-3xl text-sm md:text-base leading-7 text-zinc-400">
+            <p className="max-w-[42rem] text-[15px] leading-7 text-zinc-400">
               {description}
             </p>
           </div>
         </div>
-        <div className="space-y-6 text-sm leading-7 text-zinc-300">{children}</div>
+        <div className="space-y-6 text-[15px] leading-7 text-zinc-300">{children}</div>
       </div>
+      <div className="mt-12 h-px w-28 bg-white/7 md:mt-14" />
     </section>
   );
 }
 
 function CodeBlock({ children }: { children: ReactNode }) {
   return (
-    <pre className="overflow-x-auto rounded-3xl border border-white/8 bg-zinc-950/80 px-5 py-4 text-[12px] leading-6 text-zinc-300">
+    <pre className="overflow-x-auto rounded-2xl bg-zinc-950/55 px-5 py-4 text-[12px] leading-6 text-zinc-300 ring-1 ring-white/5">
       <code>{children}</code>
     </pre>
   );
@@ -106,19 +106,16 @@ function InfoGrid({
   items: Array<{ title: string; description: string; icon: ReactNode }>;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
       {items.map((item) => (
-        <div
-          key={item.title}
-          className="rounded-3xl border border-white/8 bg-white/[0.02] p-5"
-        >
-          <div className="mb-4 flex items-center gap-3 text-white">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
+        <div key={item.title} className="border-b border-white/6 pb-6 last:border-b-0">
+          <div className="mb-3 flex items-center gap-3 text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300">
               {item.icon}
             </div>
-            <h3 className="text-base font-semibold tracking-tight">{item.title}</h3>
+            <h3 className="text-base font-semibold tracking-tight text-white">{item.title}</h3>
           </div>
-          <p className="text-sm leading-7 text-zinc-400">{item.description}</p>
+          <p className="max-w-[30rem] text-[15px] leading-7 text-zinc-400">{item.description}</p>
         </div>
       ))}
     </div>
@@ -140,16 +137,16 @@ function SidebarLink({
     <a
       href={href}
       onClick={onClick}
-      className={`group flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-sm transition-all ${
+      className={`group flex items-center justify-between gap-3 border-l px-3 py-2 text-sm transition-all ${
         isActive
-          ? "bg-white text-black"
-          : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
+          ? "border-white/35 text-white"
+          : "border-transparent text-zinc-500 hover:border-white/12 hover:text-zinc-300"
       }`}
     >
       <span>{children}</span>
       <ChevronRight
         className={`h-4 w-4 transition-transform ${
-          isActive ? "translate-x-0 text-black" : "text-zinc-600 group-hover:translate-x-0.5"
+          isActive ? "translate-x-0 text-zinc-400" : "text-zinc-700 group-hover:translate-x-0.5"
         }`}
       />
     </a>
@@ -164,8 +161,6 @@ export function DocumentationPage({
 }: DocumentationPageProps) {
   const [activeSection, setActiveSection] = useState<string>(ALL_SECTION_IDS[0] ?? "overview");
   const [isMobileIndexOpen, setIsMobileIndexOpen] = useState(false);
-
-  const flatLinks = useMemo(() => DOC_GROUPS.flatMap((group) => group.items), []);
 
   useEffect(() => {
     const syncActiveSection = () => {
@@ -240,7 +235,7 @@ export function DocumentationPage({
     <div className="min-h-screen bg-[#030303] text-zinc-300">
       <div className="pointer-events-none absolute inset-0 dashed-grid opacity-[0.04]" />
 
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/6 bg-[#030303]/85 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#030303]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
           <button
             type="button"
@@ -260,7 +255,7 @@ export function DocumentationPage({
             <button
               type="button"
               onClick={() => setIsMobileIndexOpen((current) => !current)}
-              className="flex h-10 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-white md:hidden"
+              className="flex h-10 items-center gap-2 rounded-2xl bg-white/[0.04] px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-white md:hidden"
             >
               {isMobileIndexOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               Index
@@ -279,18 +274,18 @@ export function DocumentationPage({
 
       <div className="mx-auto flex max-w-7xl gap-10 px-4 pb-24 pt-24 md:px-8">
         <aside className="hidden w-72 shrink-0 md:block">
-          <div className="sticky top-24 space-y-6">
-            <div className="rounded-[28px] border border-white/8 bg-zinc-950/75 p-5 shadow-[0_0_80px_rgba(0,0,0,0.25)]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">
+          <div className="sticky top-24 space-y-8">
+            <div className="border-b border-white/6 pb-6">
+              <p className="text-[9px] font-bold uppercase tracking-[0.26em] text-zinc-500">
                 Reading Map
               </p>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
+              <p className="mt-3 text-[14px] leading-6 text-zinc-400">
                 Built for engineers, operators, and teams that need the exact current behavior of
                 the production pipeline.
               </p>
             </div>
 
-            <nav className="space-y-6 rounded-[28px] border border-white/8 bg-white/[0.02] p-4">
+            <nav className="space-y-6">
               {DOC_GROUPS.map((group) => (
                 <div key={group.label} className="space-y-2">
                   <div className="px-3 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
@@ -312,10 +307,10 @@ export function DocumentationPage({
               ))}
             </nav>
 
-            <div className="rounded-[28px] border border-white/8 bg-white/[0.02] p-5">
+            <div className="border-t border-white/6 pt-6">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
-                  <BookOpen className="h-4 w-4 text-white" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.03]">
+                  <BookOpen className="h-4 w-4 text-zinc-200" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">Open the Studio</p>
@@ -324,14 +319,14 @@ export function DocumentationPage({
                   </p>
                 </div>
               </div>
-              <p className="mb-5 text-sm leading-6 text-zinc-400">
+              <p className="mb-5 text-[14px] leading-6 text-zinc-400">
                 The docs stay public. Upload, reconstruct, and export remain protected behind
                 invite-only sign-in.
               </p>
               <button
                 type="button"
                 onClick={onOpenStudio}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.25em] text-black transition-colors hover:bg-zinc-200"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-200 transition-colors hover:bg-white/[0.06] hover:text-white"
               >
                 {isAuthenticated ? "Start Reconstructing" : "Open Studio"}
                 <ArrowUpRight className="h-4 w-4" />
@@ -342,7 +337,7 @@ export function DocumentationPage({
 
         {isMobileIndexOpen && (
           <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden">
-            <div className="absolute inset-x-4 top-20 rounded-[28px] border border-white/8 bg-[#09090b] p-4 shadow-[0_0_80px_rgba(0,0,0,0.35)]">
+            <div className="absolute inset-x-4 top-20 rounded-[24px] bg-[#09090b] p-4 ring-1 ring-white/6 shadow-[0_0_80px_rgba(0,0,0,0.35)]">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">Documentation Index</p>
@@ -353,7 +348,7 @@ export function DocumentationPage({
                 <button
                   type="button"
                   onClick={() => setIsMobileIndexOpen(false)}
-                  className="rounded-2xl border border-white/10 p-2 text-zinc-300"
+                  className="rounded-2xl bg-white/[0.04] p-2 text-zinc-300"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -384,10 +379,10 @@ export function DocumentationPage({
         )}
 
         <main className="relative min-w-0 flex-1">
-          <div className="space-y-8 md:space-y-10">
-            <section className="overflow-hidden rounded-[32px] border border-white/8 bg-zinc-950/70 shadow-[0_0_120px_rgba(0,0,0,0.35)]">
-              <div className="border-b border-white/8 px-6 py-4 md:px-8">
-                <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">
+          <div className="space-y-10 md:space-y-14">
+            <section className="px-1 pb-6">
+              <div className="border-b border-white/7 px-5 py-4 md:px-6">
+                <div className="flex flex-wrap items-center gap-3 text-[9px] font-bold uppercase tracking-[0.22em] text-zinc-500">
                   <span>AI Doc Studio Manual</span>
                   <span className="h-1 w-1 rounded-full bg-zinc-700" />
                   <span>Public Docs</span>
@@ -395,47 +390,47 @@ export function DocumentationPage({
                   <span>Security First</span>
                 </div>
               </div>
-              <div className="space-y-8 px-6 py-10 md:px-8 md:py-12">
+              <div className="space-y-10 px-5 py-10 md:px-6 md:py-12">
                 <div className="max-w-4xl space-y-5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.28em] text-zinc-500">
                     Reader-First Reference
                   </span>
-                  <h1 className="text-4xl md:text-6xl font-light leading-tight tracking-tight text-white">
+                  <h1 className="max-w-5xl text-[2.4rem] md:text-[4.25rem] font-light leading-[1.02] tracking-[-0.04em] text-white">
                     The production manual for a{" "}
                     <span className="font-serif italic text-zinc-500">
                       private PDF reconstruction pipeline
                     </span>
                     .
                   </h1>
-                  <p className="max-w-3xl text-sm leading-7 text-zinc-400 md:text-base">
+                  <p className="max-w-[44rem] text-[15px] leading-7 text-zinc-400">
                     This page documents the real deployed stack: public landing page, invite-only
                     Supabase magic-link auth, private storage-backed uploads, server-side PDF
                     extraction, OpenRouter reconstruction, and daily per-user rate limiting.
                   </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-3xl border border-white/8 bg-white/[0.02] p-5">
-                    <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+                <div className="grid gap-6 border-y border-white/6 py-6 md:grid-cols-3 md:gap-8">
+                  <div className="md:border-r md:border-white/6 md:pr-6">
+                    <div className="mb-3 text-[9px] font-bold uppercase tracking-[0.22em] text-zinc-600">
                       Access
                     </div>
-                    <p className="text-sm leading-6 text-zinc-300">
+                    <p className="text-[14px] leading-6 text-zinc-300">
                       Public docs. Protected upload and reconstruction workspace.
                     </p>
                   </div>
-                  <div className="rounded-3xl border border-white/8 bg-white/[0.02] p-5">
-                    <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+                  <div className="md:border-r md:border-white/6 md:pr-6">
+                    <div className="mb-3 text-[9px] font-bold uppercase tracking-[0.22em] text-zinc-600">
                       Backend
                     </div>
-                    <p className="text-sm leading-6 text-zinc-300">
+                    <p className="text-[14px] leading-6 text-zinc-300">
                       Vercel functions, Supabase Storage, Supabase Auth, OpenRouter.
                     </p>
                   </div>
-                  <div className="rounded-3xl border border-white/8 bg-white/[0.02] p-5">
-                    <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+                  <div>
+                    <div className="mb-3 text-[9px] font-bold uppercase tracking-[0.22em] text-zinc-600">
                       Limits
                     </div>
-                    <p className="text-sm leading-6 text-zinc-300">
+                    <p className="text-[14px] leading-6 text-zinc-300">
                       15 MB PDFs, 40 pages, 20 reconstructions per user per day.
                     </p>
                   </div>
@@ -443,7 +438,7 @@ export function DocumentationPage({
               </div>
             </section>
 
-            <div className="space-y-10 rounded-[32px] border border-white/8 bg-[#050505]/90 px-6 py-8 md:px-8 md:py-10">
+            <article className="space-y-12 px-5 md:space-y-14 md:px-6">
               <SectionShell
                 id="overview"
                 eyebrow="01 / Overview"
@@ -486,7 +481,7 @@ export function DocumentationPage({
                 title="From invite to reconstructed output"
                 description="The fastest user path is intentionally short: authenticate, upload a PDF, wait for server-side processing, then review the reconstructed Markdown in the editor."
               >
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-x-10 gap-y-5 md:grid-cols-2">
                   {[
                     "Open the public landing page and sign in with an invited email address.",
                     "Wait for the Supabase magic link and complete the sign-in flow.",
@@ -494,22 +489,19 @@ export function DocumentationPage({
                     "The browser requests a signed upload slot, uploads the file privately, and asks the backend to reconstruct it.",
                     "Read, inspect, and export the generated Markdown after processing completes.",
                   ].map((item, index) => (
-                    <div
-                      key={item}
-                      className="rounded-3xl border border-white/8 bg-white/[0.02] p-5"
-                    >
-                      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+                    <div key={item} className="border-b border-white/6 pb-5 last:border-b-0">
+                      <div className="mb-3 text-[9px] font-bold uppercase tracking-[0.24em] text-zinc-600">
                         Step {String(index + 1).padStart(2, "0")}
                       </div>
-                      <p className="text-sm leading-7 text-zinc-300">{item}</p>
+                      <p className="max-w-[30rem] text-[15px] leading-7 text-zinc-300">{item}</p>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-3xl border border-amber-500/20 bg-amber-500/[0.04] p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-300">
+                <div className="border-l border-amber-500/30 pl-5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-amber-300">
                     Before You Start
                   </p>
-                  <p className="mt-3 text-sm leading-7 text-zinc-300">
+                  <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-zinc-300">
                     Users should know the hard limits before uploading: 15 MB maximum PDF size, 40
                     pages maximum, extracted raw text capped at 200,000 characters, reconstructed
                     output capped at 250,000 characters, and a daily limit of 20 reconstructions
@@ -588,55 +580,55 @@ Server
                 title="Security controls that shape the product"
                 description="The application is designed around storage privacy, authenticated API access, short retention, and server-only privileges."
               >
-                <div className="overflow-x-auto rounded-3xl border border-white/8">
+                <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse text-left text-sm">
-                    <thead className="bg-white/[0.04] text-zinc-200">
+                    <thead className="text-zinc-200">
                       <tr>
-                        <th className="border-b border-white/8 px-4 py-3 font-semibold">Layer</th>
-                        <th className="border-b border-white/8 px-4 py-3 font-semibold">
+                        <th className="border-b border-white/10 px-4 py-3 font-semibold">Layer</th>
+                        <th className="border-b border-white/10 px-4 py-3 font-semibold">
                           Control
                         </th>
                       </tr>
                     </thead>
                     <tbody className="text-zinc-400">
                       <tr>
-                        <td className="border-b border-white/8 px-4 py-3 text-white">
+                        <td className="border-b border-white/6 px-4 py-4 text-white">
                           File storage
                         </td>
-                        <td className="border-b border-white/8 px-4 py-3">
+                        <td className="border-b border-white/6 px-4 py-4">
                           PDFs are uploaded into a private Supabase Storage bucket with signed upload
                           URLs.
                         </td>
                       </tr>
                       <tr>
-                        <td className="border-b border-white/8 px-4 py-3 text-white">
+                        <td className="border-b border-white/6 px-4 py-4 text-white">
                           Server privileges
                         </td>
-                        <td className="border-b border-white/8 px-4 py-3">
+                        <td className="border-b border-white/6 px-4 py-4">
                           The service-role key is server-only and used for document row writes,
                           storage downloads, and protected maintenance work.
                         </td>
                       </tr>
                       <tr>
-                        <td className="border-b border-white/8 px-4 py-3 text-white">
+                        <td className="border-b border-white/6 px-4 py-4 text-white">
                           API access
                         </td>
-                        <td className="border-b border-white/8 px-4 py-3">
+                        <td className="border-b border-white/6 px-4 py-4">
                           Upload creation and reconstruction require a valid Supabase bearer token.
                         </td>
                       </tr>
                       <tr>
-                        <td className="border-b border-white/8 px-4 py-3 text-white">
+                        <td className="border-b border-white/6 px-4 py-4 text-white">
                           Retention
                         </td>
-                        <td className="border-b border-white/8 px-4 py-3">
+                        <td className="border-b border-white/6 px-4 py-4">
                           Uploaded PDFs are temporary. The current retention window is 24 hours and
                           cleanup runs through the maintenance endpoint.
                         </td>
                       </tr>
                       <tr>
-                        <td className="px-4 py-3 text-white">Abuse control</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4 text-white">Abuse control</td>
+                        <td className="px-4 py-4">
                           Daily per-user reconstruction limits apply before OpenRouter is used.
                         </td>
                       </tr>
@@ -651,7 +643,7 @@ Server
                 title="Publicly visible routes and their role"
                 description="The backend surface is intentionally small. Most logic is concentrated in a few authenticated routes."
               >
-                <div className="space-y-4">
+                <div className="divide-y divide-white/6">
                   {[
                     {
                       route: "POST /api/uploads/create",
@@ -674,12 +666,9 @@ Server
                         "Legacy raw-text path is intentionally disabled and returns `410` so the app cannot bypass the storage-backed flow.",
                     },
                   ].map((item) => (
-                    <div
-                      key={item.route}
-                      className="rounded-3xl border border-white/8 bg-white/[0.02] p-5"
-                    >
-                      <div className="mb-3 font-mono text-[12px] text-white">{item.route}</div>
-                      <p className="text-sm leading-7 text-zinc-400">{item.detail}</p>
+                    <div key={item.route} className="py-5 first:pt-0 last:pb-0">
+                      <div className="mb-2 font-mono text-[12px] text-white">{item.route}</div>
+                      <p className="max-w-[42rem] text-[15px] leading-7 text-zinc-400">{item.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -691,7 +680,7 @@ Server
                 title="Hard limits enforced by the pipeline"
                 description="These limits exist to control cost, runtime, and abuse while keeping output quality predictable."
               >
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-x-10 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
                   {[
                     { label: "PDF file size", value: "15 MB maximum" },
                     { label: "PDF page count", value: "40 pages maximum" },
@@ -700,14 +689,11 @@ Server
                     { label: "Daily reconstructions", value: "20 per authenticated user" },
                     { label: "File retention", value: "24 hours" },
                   ].map((limit) => (
-                    <div
-                      key={limit.label}
-                      className="rounded-3xl border border-white/8 bg-white/[0.02] p-5"
-                    >
-                      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+                    <div key={limit.label} className="border-b border-white/6 pb-5">
+                      <div className="mb-3 text-[9px] font-bold uppercase tracking-[0.22em] text-zinc-600">
                         {limit.label}
                       </div>
-                      <div className="text-lg font-semibold tracking-tight text-white">
+                      <div className="text-[1.05rem] font-semibold tracking-tight text-white">
                         {limit.value}
                       </div>
                     </div>
@@ -721,7 +707,7 @@ Server
                 title="Current configuration surface"
                 description="The app is deployed on Vercel, uses Supabase for auth and storage, and requires a small set of browser and server environment variables."
               >
-                <div className="grid gap-6 xl:grid-cols-2">
+                <div className="grid gap-8 xl:grid-cols-2">
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-white">Browser variables</h3>
                     <CodeBlock>
@@ -773,12 +759,12 @@ PDF_PATH="/absolute/path/to/small-valid.pdf" \\
 SUPABASE_URL="https://YOUR_PROJECT.supabase.co" \\
 npm run test:rate-limit`}
                 </CodeBlock>
-                <div className="rounded-3xl border border-white/8 bg-white/[0.02] p-5">
+                <div className="border-l border-white/12 pl-5">
                   <div className="mb-3 flex items-center gap-3 text-white">
                     <Gauge className="h-4 w-4" />
                     <span className="font-semibold">What 429 means</span>
                   </div>
-                  <p className="text-sm leading-7 text-zinc-400">
+                  <p className="max-w-[40rem] text-[15px] leading-7 text-zinc-400">
                     A `429` response from `/api/documents/reconstruct` means the backend blocked
                     that authenticated user because the daily reconstruction quota was reached. That
                     is the expected signal that the limiter is enforcing correctly.
@@ -792,7 +778,7 @@ npm run test:rate-limit`}
                 title="Answers to the recurring operational questions"
                 description="These are the questions operators tend to ask once the pipeline is deployed and actively used."
               >
-                <div className="space-y-4">
+                <div className="divide-y divide-white/6">
                   {[
                     {
                       question: "Why is sign-in required if the landing page is public?",
@@ -815,19 +801,16 @@ npm run test:rate-limit`}
                         "Production uses the real Vercel function runtime, deployed environment variables, real Supabase project settings, and the full storage-backed pipeline. Local success is necessary, but production is the final authority.",
                     },
                   ].map((item) => (
-                    <div
-                      key={item.question}
-                      className="rounded-3xl border border-white/8 bg-white/[0.02] p-5"
-                    >
+                    <div key={item.question} className="py-5 first:pt-0 last:pb-0">
                       <h3 className="text-base font-semibold tracking-tight text-white">
                         {item.question}
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-zinc-400">{item.answer}</p>
+                      <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-zinc-400">{item.answer}</p>
                     </div>
                   ))}
                 </div>
               </SectionShell>
-            </div>
+            </article>
           </div>
         </main>
       </div>
