@@ -258,6 +258,50 @@ npm run security:audit
 
 ---
 
+## Production Rate-Limit Check
+
+Use the standalone production test script to verify the deployed daily reconstruction limit without changing app code.
+
+### What It Tests
+
+- Real production flow: `create upload -> signed upload -> reconstruct`
+- App-side per-user daily reconstruction limit
+- Expected success path before limit and expected `429` once the limit is reached
+
+### Before You Run It
+
+- Sign in to the production app with a fresh or low-usage test account
+- Copy the Supabase `access_token` from the browser session
+- Pick a small valid PDF from your machine
+
+### Run It
+
+```bash
+ACCESS_TOKEN="paste_token_here" \
+PDF_PATH="/absolute/path/to/small-valid.pdf" \
+SUPABASE_URL="https://YOUR_PROJECT.supabase.co" \
+npm run test:rate-limit
+```
+
+Optional:
+
+- `APP_URL` defaults to `https://ai-doc-studio.vercel.app`
+- `MAX_ATTEMPTS` defaults to `25`
+
+### Expected Result
+
+- Early attempts return `create 200`, `upload 200`, `reconstruct 200`
+- Limit hit returns `reconstruct 429`
+- Response headers should include `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining: 0`
+
+### Failure Meaning
+
+- `503` on reconstruct: limiter backend or fallback is unavailable
+- `500` on create or reconstruct: app bug, not limiter enforcement
+- No `429` after 25 attempts from a fresh account: limiter is not enforcing correctly in production
+
+---
+
 ## Manual Testing Checklist
 
 - ✅ Landing page loads correctly

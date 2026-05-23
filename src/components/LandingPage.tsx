@@ -7,9 +7,15 @@ interface LandingPageProps {
   authControls: ReactNode;
   isAuthenticated: boolean;
   onStart: () => void;
+  onViewDocumentation: () => void;
 }
 
-export function LandingPage({ authControls, isAuthenticated, onStart }: LandingPageProps) {
+export function LandingPage({
+  authControls,
+  isAuthenticated,
+  onStart,
+  onViewDocumentation,
+}: LandingPageProps) {
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     const element = document.getElementById(targetId);
@@ -92,7 +98,11 @@ export function LandingPage({ authControls, isAuthenticated, onStart }: LandingP
             >
               {isAuthenticated ? "Start Reconstructing" : "Sign In to Start"}
             </button>
-            <button className="w-full px-8 py-4 bg-white/5 border border-white/10 rounded-lg font-bold text-xs hover:bg-white/10 transition-all text-white uppercase tracking-widest flex items-center justify-center">
+            <button
+              type="button"
+              onClick={onViewDocumentation}
+              className="w-full px-8 py-4 bg-white/5 border border-white/10 rounded-lg font-bold text-xs hover:bg-white/10 transition-all text-white uppercase tracking-widest flex items-center justify-center"
+            >
               View Documentation
             </button>
           </motion.div>

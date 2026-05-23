@@ -16,10 +16,12 @@ import { UploadSection } from "./components/UploadSection";
 import { ProcessingState } from "./components/ProcessingState";
 import { LandingPage } from "./components/LandingPage";
 import { AuthModal } from "./components/AuthModal";
+import { DocumentationPage } from "./components/DocumentationPage";
 import { processDocumentWithStorage } from "./lib/openrouter";
 import { getSupabaseBrowserClient } from "./lib/supabase";
 
 type AppState = "LANDING" | "UPLOAD" | "PROCESSING" | "SUCCESS" | "ERROR";
+type RouteView = "HOME" | "DOCS";
 type ProcessingPhase = "uploading" | "extracting" | "reconstructing" | "finalizing";
 type AuthModalPhase = "idle" | "sending" | "sent" | "callback";
 
@@ -38,6 +40,10 @@ const AUTH_QUERY_KEYS = [
   "provider_token",
   "provider_refresh_token",
 ] as const;
+
+function getRouteView(pathname: string): RouteView {
+  return pathname.replace(/\/+$/, "") === "/docs" ? "DOCS" : "HOME";
+}
 
 const EditorWorkspace = lazy(() =>
   import("./components/EditorWorkspace").then((module) => ({
@@ -113,6 +119,9 @@ function createAuthErrorMessage(error: string) {
 }
 
 export default function App() {
+  const [routeView, setRouteView] = useState<RouteView>(() =>
+    getRouteView(window.location.pathname),
+  );
   const [state, setState] = useState<AppState>("LANDING");
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>("uploading");
   const [markdown, setMarkdown] = useState("");
@@ -131,6 +140,18 @@ export default function App() {
   const isAuthenticated = Boolean(session?.user);
   const pendingStart = hasPendingStart();
   const userEmail = session?.user.email ?? null;
+
+  const navigateToPath = (path: string, options?: { replace?: boolean }) => {
+    const nextRoute = getRouteView(path);
+    const method = options?.replace ? "replaceState" : "pushState";
+
+    window.history[method](window.history.state, "", path);
+    setRouteView(nextRoute);
+
+    if (!path.includes("#")) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  };
 
   const resetWorkspaceState = (nextState: AppState = "UPLOAD") => {
     setState(nextState);
@@ -156,6 +177,7 @@ export default function App() {
     setAuthModalError(null);
 
     if (consumePendingStart()) {
+      navigateToPath("/", { replace: true });
       resetWorkspaceState("UPLOAD");
     }
   };
@@ -261,6 +283,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handlePopState = () => {
+      setRouteView(getRouteView(window.location.pathname));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
     if (!isAuthReady || isAuthenticated || state === "LANDING") {
       return;
     }
@@ -348,11 +379,21 @@ export default function App() {
 
   const handleStart = () => {
     if (isAuthenticated) {
+      navigateToPath("/", { replace: true });
       resetWorkspaceState("UPLOAD");
       return;
     }
 
+    navigateToPath("/", { replace: true });
     handleOpenAuthModal(true);
+  };
+
+  const handleViewDocumentation = () => {
+    navigateToPath("/docs");
+  };
+
+  const handleNavigateHome = () => {
+    navigateToPath("/");
   };
 
   const handleProcess = async (file: File) => {
@@ -426,16 +467,27 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#030303] text-foreground selection:bg-white/10 dashed-grid">
       <AnimatePresence mode="wait">
-        {state === "LANDING" && (
+        {routeView === "DOCS" && (
+          <DocumentationPage
+            key="docs"
+            authControls={renderLandingAuthControls()}
+            isAuthenticated={isAuthenticated}
+            onNavigateHome={handleNavigateHome}
+            onOpenStudio={handleStart}
+          />
+        )}
+
+        {routeView === "HOME" && state === "LANDING" && (
           <LandingPage
             key="landing"
             authControls={renderLandingAuthControls()}
             isAuthenticated={isAuthenticated}
             onStart={handleStart}
+            onViewDocumentation={handleViewDocumentation}
           />
         )}
 
-        {state === "UPLOAD" && isAuthenticated && (
+        {routeView === "HOME" && state === "UPLOAD" && isAuthenticated && (
           <motion.div
             key="upload"
             initial={{ opacity: 0, scale: 0.98 }}
@@ -474,11 +526,11 @@ export default function App() {
           </motion.div>
         )}
 
-        {state === "PROCESSING" && isAuthenticated && (
+        {routeView === "HOME" && state === "PROCESSING" && isAuthenticated && (
           <ProcessingState key="processing" phase={processingPhase} />
         )}
 
-        {state === "SUCCESS" && isAuthenticated && (
+        {routeView === "HOME" && state === "SUCCESS" && isAuthenticated && (
           <Suspense fallback={<ProcessingState key="editor-loading" phase="finalizing" />}>
             <EditorWorkspace
               key="success"
@@ -492,7 +544,7 @@ export default function App() {
           </Suspense>
         )}
 
-        {state === "ERROR" && isAuthenticated && (
+        {routeView === "HOME" && state === "ERROR" && isAuthenticated && (
           <motion.div
             key="error"
             initial={{ opacity: 0 }}

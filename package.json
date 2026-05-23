@@ -14,7 +14,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "check": "npm run lint && npm run build",
-    "security:audit": "npm audit --omit=dev --audit-level=high"
+    "security:audit": "npm audit --omit=dev --audit-level=high",
+    "test:rate-limit": "node ./scripts/test-rate-limit.mjs"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.0",
