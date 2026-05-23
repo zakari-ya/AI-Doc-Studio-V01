@@ -1,135 +1,290 @@
+o + Title Section -->
+<div align="center">
+  <img src="public/favicone.png" alt="AI Doc Studio Logo" width="200" />
+
 # AI Doc Studio
 
-Security-first PDF-to-Markdown reconstruction studio built for Vercel. The landing page is public, authentication is handled with Supabase Auth magic links, and document processing remains private behind authenticated Vercel API routes.
+<p align="center">
+  <strong>Security-first PDF-to-Markdown reconstruction studio</strong>
+</p>
 
-## Highlights
+<!-- Badges -->
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React 19" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite" alt="Vite" />
+  <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss" alt="Tailwind CSS" />
+</p>
 
-- Public landing page with invite-only Supabase Auth magic-link login
-- Private PDF uploads through signed Supabase Storage URLs
-- Server-side PDF extraction and OpenRouter reconstruction
-- Per-user daily rate limiting in Postgres
-- Markdown sanitization plus TXT / MD / DOCX export
-- Daily cleanup cron compatible with the Vercel Hobby plan
+<p align="center">
+  <img src="https://img.shields.io/badge/Supabase-Auth%20%2B%20Storage-3ECF8E?logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel" alt="Vercel" />
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome" />
+</p>
 
-## Security Model
+<img src="public/demo.png" alt="AI Doc Studio Demo" width="850" />
+</div>
 
-- Browser users must sign in before upload or reconstruction actions are allowed.
-- API routes require `Authorization: Bearer <supabase access token>`.
-- Document ownership is tied to `auth_user_id` from Supabase Auth.
-- Uploaded PDFs live in a private `documents-temp` bucket and expire after `24 hours`.
-- The service-role key, Postgres URL, and OpenRouter key stay server-only.
-- Production rate limiting uses Postgres when available and falls back to the `documents` table if the dedicated limiter store is unavailable.
+---
 
-## Tech Stack
+# ✨ Features
 
-| Layer | Choice |
-| --- | --- |
-| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS 4 |
-| Auth | Supabase Auth magic links |
-| Database | Supabase Postgres |
-| File Storage | Private Supabase Storage |
-| Rate Limiting | `rate-limiter-flexible` + `pg` |
-| PDF Extraction | `pdfjs-dist` |
-| Deployment | Vercel Functions + Vercel Cron |
+<div align="center">
 
-## API Routes
+| 🔐 Security | 📄 Uploads | 🤖 AI Reconstruction | 📊 Limits |
+|---|---|---|---|
+| Invite-only authentication | Private signed uploads | OpenRouter-powered extraction | Daily usage control |
 
-| Route | Auth | Purpose |
-| --- | --- | --- |
-| `POST /api/uploads/create` | Supabase bearer token | Create a document row and signed upload URL |
-| `POST /api/documents/reconstruct` | Supabase bearer token | Download, extract, reconstruct, and persist result |
-| `POST /api/maintenance/cleanup` | `CRON_SECRET` bearer token | Expire old files and rows |
-| `POST /api/reconstruct` | Disabled | Legacy endpoint returns `410` |
+</div>
 
-## Environment Variables
+## Core Capabilities
 
-Start from [.env.example](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/.env.example:1).
+- 🔐 **Invite-only access**
+  - Supabase magic-link authentication with `shouldCreateUser: false`
 
-| Variable | Required | Scope | Purpose |
-| --- | --- | --- | --- |
-| `VITE_SUPABASE_URL` | Yes | Browser | Supabase project URL for auth and signed uploads |
-| `VITE_SUPABASE_ANON_KEY` | Yes | Browser | Public Supabase anon key |
-| `VITE_SUPABASE_STORAGE_BUCKET` | Recommended | Browser | Storage bucket name, defaults to `documents-temp` |
-| `SUPABASE_URL` | Yes | Server | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server | Server-only key for auth verification, DB writes, and storage access |
-| `SUPABASE_STORAGE_BUCKET` | Recommended | Server | Storage bucket name, defaults to `documents-temp` |
-| `SUPABASE_DATABASE_URL` | Recommended | Server | Postgres URL for the primary rate-limiter store |
-| `SUPABASE_DATABASE_SSL` | Recommended | Server | Set to `true` for hosted Supabase Postgres |
-| `OPENROUTER_API_KEY` | Yes | Server | Reconstruction model provider key |
-| `APP_BASE_URL` | Yes in production | Server | Canonical app URL and magic-link redirect target |
-| `ALLOWED_ORIGINS` | Recommended | Server | Comma-separated origin allowlist |
-| `OPENROUTER_HTTP_REFERER` | Recommended | Server | OpenRouter attribution header |
-| `CRON_SECRET` | Yes | Server | Protect the cleanup endpoint |
+- 📤 **Secure uploads**
+  - Private Supabase Storage bucket
+  - Signed upload URLs with expiration
 
-## Supabase Setup
+- 🧠 **Smart reconstruction**
+  - Server-side PDF processing
+  - AI-powered markdown rebuilding using OpenRouter
 
-1. Create a Supabase project.
-2. Enable email auth and magic links in `Authentication`.
-3. Keep the project invite-only by inviting or pre-creating users from the Supabase dashboard or admin tooling.
-4. Add your local and production app URLs to Supabase Auth redirect URLs, with the site URL matching your main deployment.
-5. Run [supabase/schema.sql](/home/zakariya/Downloads/ai-docs-studio/AI-Doc-Studio-V01/supabase/schema.sql:1) in the SQL editor.
-6. Confirm the `documents-temp` bucket exists and is private.
+- 📝 **Export support**
+  - Markdown sanitization
+  - TXT / MD / DOCX export formats
 
-Important:
+- ⏱️ **Automatic cleanup**
+  - Daily cron jobs remove expired files
+  - Optimized for Vercel Hobby deployment
 
-- The app sends magic links with `shouldCreateUser: false`, so unknown emails must not create accounts.
-- This schema is a clean auth cutover and resets the old Clerk-linked `documents` table.
+---
 
-## Local Development
+# 🎯 Quick Start
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/ai-doc-studio.git
+cd ai-doc-studio
+```
+
+## 2. Install Dependencies
 
 ```bash
 npm install
+```
+
+---
+
+## 3. Configure Environment Variables
+
+```bash
 cp .env.example .env
+```
+
+Fill in:
+
+- Supabase credentials
+- OpenRouter API key
+- Deployment URL
+- Cron secret
+
+---
+
+## 4. Start Development Server
+
+```bash
 npm run dev
 ```
 
-Recommended local values:
+---
 
-```bash
-APP_BASE_URL="http://localhost:3000"
-ALLOWED_ORIGINS="http://localhost:3000"
-OPENROUTER_HTTP_REFERER="http://localhost:3000"
+# 🌐 Live Demo
+
+👉 [AI Doc Studio Live Demo](https://ai-doc-studio.vercel.app)
+
+
+
+---
+
+# 🏗️ Architecture
+
+```txt
+Client (React + Vite)
+        │
+        ▼
+API Routes (Vercel Functions)
+        │
+ ┌──────┴──────┐
+ ▼             ▼
+Supabase     OpenRouter
+(Auth + DB)     AI
 ```
 
-The Vite development server bridges the local API handlers so browser auth, uploads, and reconstruction stay same-origin during development.
+---
 
-## Vercel Deployment
+# 🔒 Security Model
 
-1. Import the repository into Vercel with the `Vite` framework preset.
-2. Add all environment variables to the Production environment.
-3. Set `APP_BASE_URL` and `ALLOWED_ORIGINS` to your deployed origin.
-4. Add the same deployed origin to Supabase Auth site URL and redirect URLs.
-5. Redeploy after every environment-variable change.
+| Layer | Protection |
+|---|---|
+| 🔑 Authentication | Invite-only magic links |
+| 🛡️ API Routes | Bearer token validation |
+| 📁 Storage | Private bucket + signed URLs |
+| 🔐 Secrets | Service keys never exposed |
+| ⚡ Rate Limiting | Postgres-backed daily limits |
 
-`vercel.json` keeps the CSP aligned with Supabase and uses a daily cleanup cron so Hobby deployments stay valid.
+---
 
-## Verification
+# 🛠️ Tech Stack
 
-Run:
+<div align="center">
+
+| Category | Technology | Purpose |
+|---|---|---|
+| 🎨 Frontend | React 19, TypeScript, Vite 6 | Modern SPA |
+| 🎭 Styling | Tailwind CSS 4 | Responsive UI |
+| 🔐 Authentication | Supabase Auth | Magic-link login |
+| 🗄️ Database | Supabase Postgres | User data + limits |
+| 📦 Storage | Supabase Storage | Private file storage |
+| 🚀 Deployment | Vercel Functions + Cron | Serverless backend |
+
+</div>
+
+---
+
+# 📡 API Endpoints
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/api/uploads/create` | ✅ | Create signed upload URL |
+| POST | `/api/documents/reconstruct` | ✅ | Process and rebuild document |
+| POST | `/api/maintenance/cleanup` | ✅ Cron Secret | Remove expired files |
+| POST | `/api/reconstruct` | ❌ Disabled | Legacy route returning `410` |
+
+---
+
+# 🚀 Deployment
+
+## Prerequisites
+
+- Supabase project
+- OpenRouter API key
+- Vercel account
+
+---
+
+## Quick Deploy
+
+[vercel.com](https://vercel.com/button)
+
+
+---
+
+## Manual Setup
+
+<details>
+<summary>📋 Click to expand deployment steps</summary>
+
+### Supabase Setup
+
+```sql
+-- Run schema.sql in Supabase SQL Editor
+-- Enable email auth + magic links
+-- Create private bucket: documents-temp
+```
+
+### Environment Variables
+
+Copy:
+
+```bash
+.env.example
+```
+
+Then configure all required variables.
+
+### Vercel Configuration
+
+- Import repository
+- Use Vite preset
+- Add environment variables
+- Deploy project
+- Add deployment URL to Supabase redirect URLs
+
+</details>
+
+---
+
+# ⚙️ Environment Variables
+
+<details>
+<summary>🔧 Full configuration</summary>
+
+| Variable | Required | Scope | Purpose |
+|---|---|---|---|
+| `VITE_SUPABASE_URL` | ✅ | Browser | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | ✅ | Browser | Public anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Admin operations |
+| `OPENROUTER_API_KEY` | ✅ | Server | AI access |
+| `APP_BASE_URL` | ✅* | Server | Production URL |
+| `CRON_SECRET` | ✅ | Server | Protect cleanup route |
+
+> `*` Required in production.
+
+</details>
+
+---
+
+# 📊 Operational Limits
+
+| Resource | Limit |
+|---|---|
+| 📄 PDF Size | 15 MB |
+| 📑 Pages | 40 |
+| 📝 Characters | 200,000 |
+| 🔄 Daily Jobs | 20 per user |
+| ⏰ File Retention | 24 hours |
+
+---
+
+# 🧪 Verification
+
+## Automated Checks
 
 ```bash
 npm run check
 npm run security:audit
 ```
 
-Manual checks:
+---
 
-- Signed-out visitors can view the landing page.
-- The landing login button opens the magic-link modal.
-- Signed-out landing CTA opens login, then returns the user to upload after successful auth.
-- Unknown / non-invited emails do not gain access.
-- `POST /api/uploads/create` returns `401` without a valid Supabase bearer token.
-- Authenticated users can upload, reconstruct, and reopen the editor.
-- Different authenticated users cannot reconstruct each other’s documents.
+## Manual Testing Checklist
 
-## Operational Limits
+- ✅ Landing page loads correctly
+- ✅ Magic-link modal works
+- ✅ Unknown users cannot create accounts
+- ✅ Unauthorized API requests return `401`
+- ✅ Users can upload and reconstruct files
+- ✅ Export functionality works
+- ✅ Cross-user access is blocked
 
-- PDF size: `15 MB`
-- PDF pages: `40`
-- Extracted text: `200,000` characters
-- Reconstruction limit: `20` jobs per authenticated user per day
-- File retention: `24 hours`
+---
 
-## License
+# 🤝 Contributing
 
-No license file is included yet. Add one before publishing publicly.
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a pull request
+
+---
+
+
+<div align="center">
+
+### Built with ❤️ using React, Supabase, OpenRouter, and Vercel
+
+</div>
