@@ -9,6 +9,7 @@ import { HttpError } from "./http.js";
 let pdfJsPromise: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | null =
   null;
 let nodeCanvasPolyfillsPromise: Promise<void> | null = null;
+let pdfJsWorkerPromise: Promise<void> | null = null;
 
 async function ensurePdfJsNodeGlobals() {
   nodeCanvasPolyfillsPromise ??= (async () => {
@@ -45,9 +46,35 @@ async function ensurePdfJsNodeGlobals() {
 async function loadPdfJs() {
   pdfJsPromise ??= (async () => {
     await ensurePdfJsNodeGlobals();
+    await ensurePdfJsWorker();
     return import("pdfjs-dist/legacy/build/pdf.mjs");
   })();
   return pdfJsPromise;
+}
+
+async function ensurePdfJsWorker() {
+  pdfJsWorkerPromise ??= (async () => {
+    if (globalThis.pdfjsWorker?.WorkerMessageHandler) {
+      return;
+    }
+
+    try {
+      const workerModule = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+      globalThis.pdfjsWorker = workerModule as typeof globalThis.pdfjsWorker;
+    } catch (error) {
+      throw new Error(
+        `Failed to load required PDF worker module: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    if (!globalThis.pdfjsWorker?.WorkerMessageHandler) {
+      throw new Error("PDF worker module loaded without WorkerMessageHandler.");
+    }
+  })();
+
+  return pdfJsWorkerPromise;
 }
 
 export async function validatePdfBuffer(buffer: Buffer) {
